@@ -46,6 +46,17 @@ if IS_WINDOWS:
     _USER32.SetWindowPos.restype = wintypes.BOOL
     _USER32.GetForegroundWindow.argtypes = []
     _USER32.GetForegroundWindow.restype = wintypes.HWND
+    _USER32.LoadImageW.argtypes = [
+        wintypes.HINSTANCE,
+        wintypes.LPCWSTR,
+        wintypes.UINT,
+        ctypes.c_int,
+        ctypes.c_int,
+        wintypes.UINT,
+    ]
+    _USER32.LoadImageW.restype = wintypes.HANDLE
+    _USER32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    _USER32.SendMessageW.restype = ctypes.c_ssize_t
 else:
     _USER32 = None  # type: ignore[assignment]
 
@@ -342,6 +353,10 @@ def _enable_dpi_awareness() -> None:
     if not IS_WINDOWS:
         return
     try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("deskwidget.app")
+    except Exception:
+        pass
+    try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         try:
@@ -350,23 +365,43 @@ def _enable_dpi_awareness() -> None:
             pass
 
 
+def _apply_win32_icons(win: tk.Tk | tk.Toplevel, ico_path: str) -> None:
+    if not IS_WINDOWS or _USER32 is None:
+        return
+    try:
+        hwnd = _USER32.GetAncestor(win.winfo_id(), GA_ROOT) or wintypes.HWND(win.winfo_id())
+        for icon_type, size in ((0, 16), (1, 48)):
+            hicon = _USER32.LoadImageW(None, ico_path, 1, size, size, 0x00000010)
+            if hicon:
+                _USER32.SendMessageW(hwnd, 0x0080, icon_type, hicon)
+    except Exception:
+        pass
+
+
 def _set_window_icon(win: tk.Tk | tk.Toplevel, ico_path: str) -> None:
-    """Apply window icon cleanly on both Windows (.ico) and macOS/Linux (iconphoto)."""
+    """Apply window icon cleanly on both Windows (.ico + AppUserModelID) and macOS/Linux (iconphoto)."""
     if not ico_path or not os.path.exists(ico_path):
         return
     if IS_WINDOWS:
         try:
-            win.iconbitmap(ico_path)
+            if isinstance(win, tk.Tk):
+                win.iconbitmap(default=ico_path)
+            else:
+                win.iconbitmap(ico_path)
         except Exception:
             pass
-        return
     try:
-        img = Image.open(ico_path).convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS)
+        img = Image.open(ico_path).convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
         photo = ImageTk.PhotoImage(img)
-        win.iconphoto(True, photo)
+        win.iconphoto(isinstance(win, tk.Tk), photo)
         win._desk_icon_ref = photo  # type: ignore[attr-defined]
     except Exception:
         pass
+    if IS_WINDOWS:
+        try:
+            win.after(60, lambda: _apply_win32_icons(win, ico_path))
+        except Exception:
+            pass
 
 
 def _replace_existing_instance() -> None:
@@ -471,6 +506,7 @@ class ESLDeskWidget:
         self._detail_win: tk.Toplevel | None = None
         self._detail_key: tuple[str, object] | None = None
         self._settings_win: tk.Toplevel | None = None
+        self._settings_logo_sync = None
         self._auth_win: tk.Toplevel | None = None
         self._admin_win: tk.Toplevel | None = None
         self._shown_announcement_key: str = ""
@@ -602,185 +638,6 @@ class ESLDeskWidget:
             state="normal" if (self._feature_allowed("allow_settings") or sess.is_guest) else "disabled",
         )
         self.menu.add_separator()
-
-        self.var_topmost = tk.BooleanVar(value=bool(self.cfg.get("always_on_top", False)))
-        self.menu.add_checkbutton(
-            label="Always on top" if is_en else "Luôn nổi trên cùng",
-            variable=self.var_topmost,
-            command=self._toggle_topmost,
-        )
-        self.menu.add_command(
-            label="Send behind windows" if is_en else "Ẩn ra sau các cửa sổ khác",
-            command=self._send_to_back,
-        )
-
-        style_menu = tk.Menu(self.menu, tearoff=0)
-        cur_style = str(self.cfg.get("style", "serif")).lower()
-        if cur_style == "esl":
-            cur_style = "sans"
-        elif cur_style not in ("botanical", "serif", "sans"):
-            cur_style = "serif"
-        self.var_style = tk.StringVar(value=cur_style)
-        style_menu.add_radiobutton(
-            label="Botanical (Palatino + Candara)" if is_en else "Botanical (Palatino + Candara)",
-            variable=self.var_style,
-            value="botanical",
-            command=self._on_style_change,
-        )
-        style_menu.add_radiobutton(
-            label="Classic Serif (Palatino + Segoe UI)" if is_en else "Cổ điển · Chữ có chân (Palatino + Segoe UI)",
-            variable=self.var_style,
-            value="serif",
-            command=self._on_style_change,
-        )
-        style_menu.add_radiobutton(
-            label="Minimal Sans (Segoe UI)" if is_en else "Tối giản · Chữ không chân (Minimal Sans)",
-            variable=self.var_style,
-            value="sans",
-            command=self._on_style_change,
-        )
-        allow_style = self._feature_allowed("allow_style")
-        self.menu.add_cascade(
-            label="Visual style" if is_en else "Phong cách giao diện",
-            menu=style_menu,
-            state="normal" if allow_style else "disabled",
-        )
-
-        theme_menu = tk.Menu(self.menu, tearoff=0)
-        self.var_theme = tk.StringVar(value=str(self.cfg.get("theme", "auto")))
-        theme_menu.add_radiobutton(
-            label="Auto by time (Light 6 AM–5:59 PM)" if is_en else "Tự động theo giờ (Sáng 6h–17:59)",
-            variable=self.var_theme,
-            value="auto",
-            command=self._on_theme_change,
-        )
-        theme_menu.add_radiobutton(
-            label="Follow system (Light / Dark)" if is_en else "Theo giao diện máy (Sáng / Tối)",
-            variable=self.var_theme,
-            value="system",
-            command=self._on_theme_change,
-        )
-        theme_menu.add_radiobutton(
-            label="Light (Light E-Ink)" if is_en else "Sáng (Light E-Ink)",
-            variable=self.var_theme,
-            value="light",
-            command=self._on_theme_change,
-        )
-        theme_menu.add_radiobutton(
-            label="Dark (Dark E-Ink)" if is_en else "Tối (Dark E-Ink)",
-            variable=self.var_theme,
-            value="dark",
-            command=self._on_theme_change,
-        )
-        allow_theme = self._feature_allowed("allow_theme")
-        self.menu.add_cascade(
-            label="E-Ink theme" if is_en else "Giao diện E-Ink",
-            menu=theme_menu,
-            state="normal" if allow_theme else "disabled",
-        )
-
-        align_menu = tk.Menu(self.menu, tearoff=0)
-        self.var_align = tk.StringVar(value=str(self.cfg.get("owner_align", "center")))
-        align_items = [("Left", "left"), ("Center", "center"), ("Right", "right")] if is_en else [("Trái", "left"), ("Giữa", "center"), ("Phải", "right")]
-        for lbl, val in align_items:
-            align_menu.add_radiobutton(
-                label=lbl,
-                variable=self.var_align,
-                value=val,
-                command=self._on_align_change,
-            )
-        self.menu.add_cascade(label="Title alignment" if is_en else "Vị trí tên tiêu đề", menu=align_menu)
-
-        temp_menu = tk.Menu(self.menu, tearoff=0)
-        self.var_temp_unit = tk.StringVar(value=str(self.cfg.get("temp_unit", "C")).upper())
-        temp_menu.add_radiobutton(
-            label="Celsius (°C)" if is_en else "Độ C (°C)",
-            variable=self.var_temp_unit,
-            value="C",
-            command=self._on_temp_unit_change,
-        )
-        temp_menu.add_radiobutton(
-            label="Fahrenheit (°F)" if is_en else "Độ F (°F)",
-            variable=self.var_temp_unit,
-            value="F",
-            command=self._on_temp_unit_change,
-        )
-        self.menu.add_cascade(label="Temperature unit" if is_en else "Đơn vị nhiệt độ", menu=temp_menu)
-
-        lang_menu = tk.Menu(self.menu, tearoff=0)
-        self.var_lang = tk.StringVar(value=self._lang())
-        lang_menu.add_radiobutton(
-            label="Tiếng Việt",
-            variable=self.var_lang,
-            value="vi",
-            command=self._on_language_change,
-        )
-        lang_menu.add_radiobutton(
-            label="English",
-            variable=self.var_lang,
-            value="en",
-            command=self._on_language_change,
-        )
-        self.menu.add_cascade(label="Language / Ngôn ngữ", menu=lang_menu)
-
-        logo_menu = tk.Menu(self.menu, tearoff=0)
-        raw_logo_mode = str(self.cfg.get("logo_mode", "widget_bg")).lower()
-        if raw_logo_mode == "wallpaper":
-            raw_logo_mode = "widget_bg"
-        self.var_logo_mode = tk.StringVar(value=raw_logo_mode)
-        logo_menu.add_command(
-            label="Change widget background (syncs circle logo)..." if is_en else "Đổi ảnh nền widget (đồng bộ icon tròn)...",
-            command=self._choose_widget_bg,
-        )
-        logo_menu.add_command(
-            label="Reset default background" if is_en else "Khôi phục nền mặc định",
-            command=self._reset_widget_bg,
-        )
-        logo_menu.add_separator()
-        logo_menu.add_radiobutton(
-            label="Header icon: Sync with widget background (circle)" if is_en else "Icon cạnh tên: Đồng bộ nền widget (tròn)",
-            variable=self.var_logo_mode,
-            value="widget_bg",
-            command=self._on_logo_mode_change,
-        )
-        logo_menu.add_radiobutton(
-            label="Header icon: Custom image (circle)" if is_en else "Icon cạnh tên: Dùng ảnh riêng (tròn)",
-            variable=self.var_logo_mode,
-            value="custom",
-            command=self._on_logo_mode_change,
-        )
-        logo_menu.add_command(
-            label="Choose custom header icon..." if is_en else "Chọn ảnh icon riêng...",
-            command=self._choose_custom_logo,
-        )
-        logo_menu.add_radiobutton(
-            label="Hide header icon" if is_en else "Ẩn icon cạnh tên",
-            variable=self.var_logo_mode,
-            value="none",
-            command=self._on_logo_mode_change,
-        )
-        self.menu.add_cascade(
-            label="Background & Logo" if is_en else "Nền & Logo widget",
-            menu=logo_menu,
-            state="normal" if self._feature_allowed("allow_bg_logo") else "disabled",
-        )
-
-        self.var_autostart = tk.BooleanVar(value=is_autostart_enabled())
-        if is_en:
-            autostart_lbl = "Launch on macOS login" if IS_MACOS else "Start with Windows"
-        else:
-            autostart_lbl = "Tự khởi động cùng macOS" if IS_MACOS else "Tự khởi động cùng Windows"
-        self.menu.add_checkbutton(
-            label=autostart_lbl,
-            variable=self.var_autostart,
-            command=self._toggle_autostart,
-        )
-
-        self.menu.add_command(
-            label="Change icon / logo..." if is_en else "Đổi icon / logo...",
-            command=self._change_icon,
-            state="normal" if self._feature_allowed("allow_bg_logo") else "disabled",
-        )
         self.menu.add_command(
             label="Export ESL (296×128 PNG)..." if is_en else "Xuất ảnh ESL (296×128 PNG)...",
             command=self._export_esl,
@@ -1448,7 +1305,8 @@ class ESLDeskWidget:
 
     def _send_to_back(self) -> None:
         self.cfg["always_on_top"] = False
-        self.var_topmost.set(False)
+        if hasattr(self, "var_topmost"):
+            self.var_topmost.set(False)
         save_config(self.cfg)
         if not IS_WINDOWS or _USER32 is None:
             try:
@@ -1503,12 +1361,18 @@ class ESLDeskWidget:
         self._build_menu()
         self._redraw_from_state()
 
+    def _dialog_parent(self) -> tk.Tk | tk.Toplevel:
+        if self._settings_win is not None and self._settings_win.winfo_exists():
+            return self._settings_win
+        return self.root
+
     def _choose_widget_bg(self) -> None:
         is_en = self._lang() == "en"
+        parent_w = self._dialog_parent()
         path = filedialog.askopenfilename(
-            parent=self.root,
+            parent=parent_w,
             title="Choose widget background image" if is_en else "Chọn ảnh nền widget (đồng bộ icon tròn)",
-            filetypes=[("Images", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("All files", "*.*")],
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.webp *.bmp"), ("All files", "*.*")],
         )
         if not path:
             return
@@ -1521,13 +1385,15 @@ class ESLDeskWidget:
             self.cfg["logo_mode"] = "widget_bg"
             if hasattr(self, "var_logo_mode"):
                 self.var_logo_mode.set("widget_bg")
+            if self._settings_logo_sync is not None:
+                self._settings_logo_sync("widget_bg")
             save_config(self.cfg)
             self._redraw_from_state()
         except Exception as exc:
             messagebox.showerror(
                 "Background error" if is_en else "Lỗi đổi ảnh nền",
                 f"{exc}",
-                parent=self.root,
+                parent=parent_w,
             )
 
     def _reset_widget_bg(self) -> None:
@@ -1535,6 +1401,8 @@ class ESLDeskWidget:
         self.cfg["logo_mode"] = "widget_bg"
         if hasattr(self, "var_logo_mode"):
             self.var_logo_mode.set("widget_bg")
+        if self._settings_logo_sync is not None:
+            self._settings_logo_sync("widget_bg")
         save_config(self.cfg)
         self._redraw_from_state()
 
@@ -1551,14 +1419,15 @@ class ESLDeskWidget:
 
     def _choose_custom_logo(self) -> None:
         is_en = self._lang() == "en"
+        parent_w = self._dialog_parent()
         path = filedialog.askopenfilename(
-            parent=self.root,
+            parent=parent_w,
             title="Choose header logo image" if is_en else "Chọn ảnh logo tiêu đề",
-            filetypes=[("Images", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("All files", "*.*")],
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.webp *.bmp"), ("All files", "*.*")],
         )
         if not path:
             if hasattr(self, "var_logo_mode"):
-                self.var_logo_mode.set(str(self.cfg.get("logo_mode", "wallpaper")).lower())
+                self.var_logo_mode.set(str(self.cfg.get("logo_mode", "widget_bg")).lower())
             return
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         dst_logo = os.path.join(BASE_DIR, f"custom_logo_{stamp}.png")
@@ -1569,13 +1438,15 @@ class ESLDeskWidget:
             self.cfg["logo_mode"] = "custom"
             if hasattr(self, "var_logo_mode"):
                 self.var_logo_mode.set("custom")
+            if self._settings_logo_sync is not None:
+                self._settings_logo_sync("custom")
             save_config(self.cfg)
             self._redraw_from_state()
         except Exception as exc:
             messagebox.showerror(
                 "Logo error" if is_en else "Lỗi chọn logo",
                 f"{exc}",
-                parent=self.root,
+                parent=parent_w,
             )
 
     def _toggle_autostart(self) -> None:
@@ -1585,10 +1456,11 @@ class ESLDeskWidget:
         set_autostart(val, _active_icon_path(self.cfg))
 
     def _change_icon(self) -> None:
+        parent_w = self._dialog_parent()
         path = filedialog.askopenfilename(
-            parent=self.root,
+            parent=parent_w,
             title="Chọn ảnh logo / icon mới",
-            filetypes=[("Image / Icon", "*.png;*.jpg;*.jpeg;*.webp;*.ico"), ("All files", "*.*")],
+            filetypes=[("Image / Icon", "*.png *.jpg *.jpeg *.webp *.ico"), ("All files", "*.*")],
         )
         if not path:
             return
@@ -1600,14 +1472,16 @@ class ESLDeskWidget:
             self.cfg["icon_path"] = dst_ico
             save_config(self.cfg)
             _set_window_icon(self.root, dst_ico)
+            if self._settings_win is not None and self._settings_win.winfo_exists():
+                _set_window_icon(self._settings_win, dst_ico)
             _update_shortcuts_icon(dst_ico)
             messagebox.showinfo(
                 "Đã đổi icon",
                 "Đã cập nhật icon mới cho widget!" if not IS_WINDOWS else "Đã cập nhật icon mới cho widget và shortcut Desktop!\n(Nếu Desktop chưa đổi ngay, bấm F5 ngoài Desktop.)",
-                parent=self.root,
+                parent=parent_w,
             )
         except Exception as exc:
-            messagebox.showerror("Lỗi đổi icon", f"Không chuyển được ảnh thành icon:\n{exc}", parent=self.root)
+            messagebox.showerror("Lỗi đổi icon", f"Không chuyển được ảnh thành icon:\n{exc}", parent=parent_w)
 
     def _export_esl(self) -> None:
         if self.last_screen is None:
@@ -1744,7 +1618,7 @@ class ESLDeskWidget:
                     view_year=self.view_year,
                     view_month=self.view_month,
                 )
-            stats = self.sys_monitor.read(sample_interval=0.4, include_cpu_temp=True)
+            stats = self.sys_monitor.read(sample_interval=None, include_cpu_temp=True)
 
             def _update_ui() -> None:
                 self._last_cal = cal
@@ -2008,13 +1882,15 @@ class ESLDeskWidget:
         opt_row = ttk.Frame(frm)
         opt_row.grid(row=10, column=0, columnspan=2, sticky="ew", **pad)
         ttk.Label(opt_row, text="Style:" if is_en else "Phong cách:").pack(side="left")
-        ttk.Combobox(opt_row, textvariable=var_style_set, values=["botanical", "serif", "sans"], width=9, state="readonly").pack(
-            side="left", padx=(4, 8)
-        )
+        cb_style = ttk.Combobox(opt_row, textvariable=var_style_set, values=["botanical", "serif", "sans"], width=9, state="readonly")
+        cb_style.pack(side="left", padx=(4, 8))
+        if not self._feature_allowed("allow_style"):
+            cb_style.configure(state="disabled")
         ttk.Label(opt_row, text="Theme:" if is_en else "Chế độ:").pack(side="left")
-        ttk.Combobox(opt_row, textvariable=var_theme_set, values=["auto", "system", "light", "dark"], width=7, state="readonly").pack(
-            side="left", padx=(4, 8)
-        )
+        cb_theme = ttk.Combobox(opt_row, textvariable=var_theme_set, values=["auto", "system", "light", "dark"], width=7, state="readonly")
+        cb_theme.pack(side="left", padx=(4, 8))
+        if not self._feature_allowed("allow_theme"):
+            cb_theme.configure(state="disabled")
         ttk.Label(opt_row, text="Scale:" if is_en else "Cỡ:").pack(side="left")
         ttk.Combobox(opt_row, textvariable=var_scale, values=[0.85, 1.0, 1.2, 1.25, 1.4], width=5, state="readonly").pack(
             side="left", padx=(4, 8)
@@ -2033,8 +1909,61 @@ class ESLDeskWidget:
             autostart_set_lbl = "Tự mở cùng macOS" if IS_MACOS else "Tự mở cùng Windows"
         ttk.Checkbutton(opt_row, text=autostart_set_lbl, variable=var_autostart_set).pack(side="left")
 
+        raw_logo_mode = str(self.cfg.get("logo_mode", "widget_bg")).lower()
+        if raw_logo_mode == "wallpaper":
+            raw_logo_mode = "widget_bg"
+        logo_labels = (
+            {"widget_bg": "Sync widget bg", "custom": "Custom circle", "none": "Hidden"}
+            if is_en
+            else {"widget_bg": "Đồng bộ nền", "custom": "Ảnh riêng", "none": "Ẩn icon"}
+        )
+        logo_rev = {v: k for k, v in logo_labels.items()}
+        var_logo_set = tk.StringVar(value=logo_labels.get(raw_logo_mode, logo_labels["widget_bg"]))
+        var_topmost_set = tk.BooleanVar(value=bool(self.cfg.get("always_on_top", False)))
+        self._settings_logo_sync = lambda m: var_logo_set.set(logo_labels.get(m, logo_labels["widget_bg"]))
+        win.bind("<Destroy>", lambda e: setattr(self, "_settings_logo_sync", None) if e.widget is win else None)
+
+        z_row = ttk.Frame(frm)
+        z_row.grid(row=11, column=0, columnspan=2, sticky="ew", **pad)
+        ttk.Checkbutton(
+            z_row,
+            text="Always on top" if is_en else "Luôn nổi trên cùng",
+            variable=var_topmost_set,
+        ).pack(side="left")
+        ttk.Button(
+            z_row,
+            text="Send behind" if is_en else "Ẩn ra sau ngay",
+            command=lambda: (var_topmost_set.set(False), self._send_to_back()),
+        ).pack(side="left", padx=(8, 0))
+
+        allow_bg = self._feature_allowed("allow_bg_logo")
+        bg_state = "normal" if allow_bg else "disabled"
+        brand_row = ttk.Frame(frm)
+        brand_row.grid(row=12, column=0, columnspan=2, sticky="ew", **pad)
+        ttk.Label(brand_row, text="Header Icon:" if is_en else "Logo:").pack(side="left")
+        cb_logo = ttk.Combobox(
+            brand_row,
+            textvariable=var_logo_set,
+            values=list(logo_labels.values()),
+            width=13,
+            state="readonly" if allow_bg else "disabled",
+        )
+        cb_logo.pack(side="left", padx=(4, 8))
+        ttk.Button(brand_row, text="Bg..." if is_en else "Đổi nền...", command=self._choose_widget_bg, state=bg_state).pack(
+            side="left", padx=2
+        )
+        ttk.Button(brand_row, text="Reset Bg" if is_en else "Nền mặc định", command=self._reset_widget_bg, state=bg_state).pack(
+            side="left", padx=2
+        )
+        ttk.Button(brand_row, text="Logo..." if is_en else "Đổi logo...", command=self._choose_custom_logo, state=bg_state).pack(
+            side="left", padx=2
+        )
+        ttk.Button(brand_row, text="App Icon..." if is_en else "Đổi icon app...", command=self._change_icon, state=bg_state).pack(
+            side="left", padx=2
+        )
+
         btn_row = ttk.Frame(frm)
-        btn_row.grid(row=11, column=0, columnspan=2, sticky="e", pady=(10, 2), padx=10)
+        btn_row.grid(row=13, column=0, columnspan=2, sticky="e", pady=(10, 2), padx=10)
 
         def _save() -> None:
             new_cals: list[dict] = []
@@ -2063,7 +1992,8 @@ class ESLDeskWidget:
 
             self.cfg["owner_name"] = var_owner.get().strip() or "Desk Widget"
             self.cfg["owner_align"] = align_rev.get(var_align_set.get(), "center")
-            self.var_align.set(self.cfg["owner_align"])
+            if hasattr(self, "var_align"):
+                self.var_align.set(self.cfg["owner_align"])
             self.cfg["calendars"] = new_cals
             self.cfg["weather"]["auto_location"] = bool(var_auto_loc.get())
             try:
@@ -2085,20 +2015,28 @@ class ESLDeskWidget:
                 self.cfg["timezone"] = tz_val
             self.cfg["scale"] = float(var_scale.get())
             self.cfg["style"] = var_style_set.get()
-            self.var_style.set(self.cfg["style"])
+            if hasattr(self, "var_style"):
+                self.var_style.set(self.cfg["style"])
             self.cfg["theme"] = var_theme_set.get()
-            self.var_theme.set(self.cfg["theme"])
+            if hasattr(self, "var_theme"):
+                self.var_theme.set(self.cfg["theme"])
             self.cfg["temp_unit"] = str(var_temp_set.get() or "C").upper()
             if hasattr(self, "var_temp_unit"):
                 self.var_temp_unit.set(self.cfg["temp_unit"])
             self.cfg["language"] = lang_rev.get(var_lang_set.get(), "vi")
             if hasattr(self, "var_lang"):
                 self.var_lang.set(self.cfg["language"])
+            self.cfg["always_on_top"] = bool(var_topmost_set.get())
+            if hasattr(self, "var_topmost"):
+                self.var_topmost.set(self.cfg["always_on_top"])
+            self.cfg["logo_mode"] = logo_rev.get(var_logo_set.get(), "widget_bg")
             auto_val = bool(var_autostart_set.get())
             self.cfg["auto_start"] = auto_val
-            self.var_autostart.set(auto_val)
+            if hasattr(self, "var_autostart"):
+                self.var_autostart.set(auto_val)
             set_autostart(auto_val, _active_icon_path(self.cfg))
             save_config(self.cfg)
+            self._apply_z_order()
             self._build_menu()
             win.destroy()
             self.trigger_refresh(force_weather=True)

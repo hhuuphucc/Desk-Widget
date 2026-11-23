@@ -151,9 +151,16 @@ class TestESLWidget(unittest.TestCase):
         ram_procs = top_ram_processes(5)
         self.assertGreater(len(ram_procs), 0)
 
-        # Verify zero-block real-time polling + partial SYSTEM patch rendering
-        rt_stats = SystemMonitor().read(sample_interval=None, include_cpu_temp=False)
+        # Verify zero-block real-time polling + cross-thread shared CPU baseline + partial SYSTEM patch
+        mon = SystemMonitor()
+        rt_stats = mon.read(sample_interval=0.28, include_cpu_temp=False)
         self.assertTrue(0 <= rt_stats.cpu_pct <= 100)
+        thread_res: list[int] = []
+        t = __import__("threading").Thread(target=lambda: thread_res.append(mon.read(sample_interval=None, include_cpu_temp=False).cpu_pct))
+        t.start()
+        t.join(timeout=2)
+        self.assertEqual(len(thread_res), 1)
+        self.assertTrue(0 <= thread_res[0] <= 100)
         cal = parse_ics_for_date([], tz_name="Asia/Ho_Chi_Minh")
         weather = WeatherData("Hà Nội", 24, "Mây", "cloud", 19, 27, 20, [], datetime.now())
         _, _, _, _, cache = render_widget_cached(cal, weather, stats, style="botanical", theme_mode="dark")

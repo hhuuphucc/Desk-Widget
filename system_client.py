@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import psutil
 
@@ -464,7 +465,10 @@ def top_gpu_processes(limit: int = 12) -> tuple[list[dict], list[dict]]:
 
 class SystemMonitor:
     def __init__(self) -> None:
-        psutil.cpu_percent(interval=None)
+        self._cpu_lock = threading.Lock()
+        self._prev_cpu_times = psutil.cpu_times()
+        self._last_cpu_at: float = time.monotonic()
+        self._last_cpu_pct: int = 0
         self._gpu_name: str = _detect_mac_gpu_name() if IS_MACOS else "GPU"
         self._nvml = _NvmlReader() if IS_WINDOWS else None
         self._cpu_temp_c: float | None = None
@@ -472,8 +476,34 @@ class SystemMonitor:
         self._last_gpu_info: tuple[int | None, str, int | None, int | None, float | None] | None = None
         self._gpu_checked_at: float = 0.0
 
+    def _read_cpu_pct_safe(self, sample_interval: float | None = None) -> int:
+        if sample_interval is not None and sample_interval > 0:
+            time.sleep(sample_interval)
+        with self._cpu_lock:
+            now_m = time.monotonic()
+            # Keep baseline shared across threads (psutil.cpu_percent keys per-thread tid!)
+            if (now_m - self._last_cpu_at) < 0.25:
+                return self._last_cpu_pct
+            cur = psutil.cpu_times()
+            prev = self._prev_cpu_times
+            self._prev_cpu_times = cur
+            self._last_cpu_at = now_m
+            if prev is None or prev._fields != cur._fields:
+                return self._last_cpu_pct
+            deltas = {f: max(0.0, float(getattr(cur, f)) - float(getattr(prev, f))) for f in cur._fields}
+            tot = sum(deltas.values())
+            if sys.platform.startswith("linux"):
+                tot -= deltas.get("guest", 0.0) + deltas.get("guest_nice", 0.0)
+            if tot <= 0.0:
+                return self._last_cpu_pct
+            idle = deltas.get("idle", 0.0) + deltas.get("iowait", 0.0)
+            busy = max(0.0, tot - idle)
+            val = max(0, min(100, int(round((busy / tot) * 100.0))))
+            self._last_cpu_pct = val
+            return val
+
     def read(self, sample_interval: float | None = None, include_cpu_temp: bool = True) -> SystemStats:
-        cpu = max(0, min(100, int(round(psutil.cpu_percent(interval=sample_interval)))))
+        cpu = self._read_cpu_pct_safe(sample_interval=sample_interval)
         vm = psutil.virtual_memory()
         ram_pct = max(0, min(100, int(round(vm.percent))))
         ram_used = vm.used / (1024 ** 3)
