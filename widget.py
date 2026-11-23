@@ -517,9 +517,16 @@ class ESLDeskWidget:
         self._drag_x = 0
         self._drag_y = 0
         self._moved = False
+        self._exiting = False
 
         self.root = tk.Tk()
         self.root.title("desk-widget")
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
+        if IS_MACOS:
+            try:
+                self.root.createcommand("::tk::mac::Quit", self.quit)
+            except Exception:
+                pass
         _set_window_icon(self.root, _active_icon_path(self.cfg))
         self.root.overrideredirect(True)
         self._mac_transparent = False
@@ -2656,15 +2663,50 @@ class ESLDeskWidget:
 
         _load_users()
 
+    @staticmethod
+    def _cleanup_pid_file() -> None:
+        try:
+            if os.path.exists(PID_PATH):
+                with open(PID_PATH, "r", encoding="utf-8") as f:
+                    pid_txt = f.read().strip()
+                if pid_txt == str(os.getpid()):
+                    os.remove(PID_PATH)
+        except Exception:
+            pass
+
     def quit(self) -> None:
+        if self._exiting:
+            return
+        self._exiting = True
         self._close_detail_popup()
-        self.root.destroy()
+        for win_attr in ("_settings_win", "_auth_win", "_admin_win"):
+            w = getattr(self, win_attr, None)
+            if w is not None:
+                try:
+                    if w.winfo_exists():
+                        w.destroy()
+                except Exception:
+                    pass
+                setattr(self, win_attr, None)
+        self._cleanup_pid_file()
+        try:
+            self.root.quit()
+        except Exception:
+            pass
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
 
     def run(self) -> None:
-        self.root.mainloop()
+        try:
+            self.root.mainloop()
+        finally:
+            self._cleanup_pid_file()
 
 
 if __name__ == "__main__":
     _replace_existing_instance()
     app = ESLDeskWidget()
     app.run()
+    sys.exit(0)
