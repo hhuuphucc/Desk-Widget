@@ -1,0 +1,32 @@
+{
+  "owner_name": "My Workspace",
+  "owner_align": "center",
+  "bg_image": "",
+  "logo_mode": "widget_bg",
+  "logo_path": "",
+  "calendars": [
+    {
+      "name": "Cá nhân",
+      "url": "",
+      "enabled": true
+    }
+  ],
+  "refresh_seconds": 60,
+  "timezone": "Asia/Ho_Chi_Minh",
+  "style": "serif",
+  "theme": "auto",
+  "temp_unit": "C",
+  "language": "vi",
+  "auto_start": false,
+  "always_on_top": false,
+  "scale": 1.0,
+  "window_x": null,
+  "window_y": null,
+  "weather": {
+    "auto_location": true,
+    "city": "Hà Nội",
+    "latitude": 21.0285,
+    "longitude": 105.8542,
+    "cache_minutes": 15
+  }
+}

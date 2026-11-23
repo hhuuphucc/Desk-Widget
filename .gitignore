@@ -1,0 +1,15 @@
+# Private local config, personal calendar caches, custom icons/logos/backgrounds & runtime files
+config.json
+*.ics
+custom_icon_*.ico
+custom_logo_*.*
+custom_bg_*.*
+assets/emblem_*.png
+widget.pid
+__pycache__/
+*.pyc
+preview_*.png
+build/
+dist/
+*.spec
+*.dmg
