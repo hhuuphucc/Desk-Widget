@@ -146,18 +146,6 @@ desk-widget/
 └── assets/             # Optional local visual assets (personal images are gitignored)
 ```
 
-### Role-Based Access Control (Optional Free Supabase Setup)
-
-- **Offline Demo Mode:** Fresh downloads open immediately with an offline preview; users can sign up or sign in with Email + Password (plus built-in Email OTP password reset) to sync personal `.ics` calendars.
-- **3-Tier RBAC:** `super_admin` (unique immutable owner account, exclusive 11-digit CSPRNG Co-Admin ID generator/revoker, full account & config control) → `admin` (Co-Admin signed in with Email + Password + 11-digit Admin ID) → `user`.
-- To enable on your own free [Supabase](https://supabase.com) project:
-  1. Run [supabase_schema.sql](supabase_schema.sql) once in the Supabase **SQL Editor** (and customize the Reset Password email template to display `{{ .Token }}` for in-app OTP recovery).
-  2. Set `SUPABASE_URL` & `SUPABASE_ANON_KEY` in `auth_client.py` (or in **Sign in → Supabase Server**).
-  3. Sign up with your owner email inside the app, then run once in SQL Editor:
-     ```sql
-     SELECT public.bootstrap_super_admin('<your-owner-email>', '<your-11-digit-super-id>');
-     ```
-
 ### Complete Uninstall (Remove 100% of App & Local Data)
 
 `desk-widget` does not modify the Windows Registry or install background system services. To remove it completely:
@@ -302,18 +290,6 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
 | **Nhấn `Esc`** | Đóng nhanh cửa sổ popup đang mở |
 | **Nhấn đúp** (vùng trống) | Mở bảng Cài đặt |
 | **Chuột phải** | Mở menu tùy chỉnh nhanh |
-
-### Phân quyền 3 cấp với Supabase Free (Tùy chọn)
-
-- **Xem thử Offline → Đăng nhập để đồng bộ:** Người mới tải app vẫn thấy widget mẫu Offline ngay; bấm **Đăng nhập / Đăng ký** (Email + Mật khẩu, có sẵn nút **Quên mật khẩu?** dùng mã OTP gửi qua Email) để mở khóa và đồng bộ lịch cá nhân.
-- **Phân quyền 3 cấp (`Super Admin` / `Co-Admin` / `User`):** Tài khoản `super_admin` được bảo vệ cứng bởi **PostgreSQL RLS + Trigger** (không Co-Admin nào xóa/sửa được) và **chỉ Super Admin** mới tự sinh/cấp lại **Co-Admin ID 11 chữ số ngẫu nhiên duy nhất** (cam kết không trùng Super ID).
-- **Cách kích hoạt trên Supabase miễn phí:**
-  1. Tạo project miễn phí tại [supabase.com](https://supabase.com), chạy file [supabase_schema.sql](supabase_schema.sql) trong **SQL Editor** (và chỉnh Email Template *Reset Password* hiển thị `{{ .Token }}` để dùng mã OTP ngay trong app).
-  2. Điền `SUPABASE_URL` & `SUPABASE_ANON_KEY` vào `auth_client.py` (hoặc nhập trực tiếp ở mục **Cấu hình Supabase** trong cửa sổ Đăng nhập).
-  3. Mở app tự **Đăng ký** tài khoản chủ của bạn, sau đó chạy đúng 1 dòng trong **SQL Editor**:
-     ```sql
-     SELECT public.bootstrap_super_admin('<email-chu-so-huu>', '<super-id-11-so-cua-ban>');
-     ```
 
 ### Gỡ bỏ hoàn toàn ứng dụng (Khi không dùng nữa)
 
