@@ -2,6 +2,12 @@
 
 **English** · [Tiếng Việt](#tiếng-việt)
 
+> ### Download & Run — No Git or Python Required / Tải về chạy ngay (Không cần Git hay Python)
+> - **All Releases:** [**GitHub Releases (Latest)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
+> - **Windows 10/11 (`.exe`):** [**Download `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(First run SmartScreen: **More info → Run anyway**)*
+> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Download `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+> - **macOS Intel (`.dmg`):** [**Download `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+
 ---
 
 ## English
@@ -168,6 +174,12 @@ python test_widget.py -v
 ## Tiếng Việt
 
 [English](#english) · **Tiếng Việt**
+
+> **Tải về chạy ngay (Không cần cài Git hay Python):**
+> - **Trang phát hành:** [**GitHub Releases (Bản mới nhất)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
+> - **Windows 10/11 (`.exe`):** [**Tải `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(Lần đầu nếu SmartScreen hỏi: **More info → Run anyway**)*
+> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Tải `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
+> - **macOS Intel (`.dmg`):** [**Tải `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
 
 Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Apple Silicon M1/M2/M3/M4 & Intel)** (`Tkinter` + `Pillow`), hỗ trợ ba phong cách kiểu chữ & giao diện: **Botanical**, **Classic Serif** và **Minimal Sans**. Tự động làm mới mỗi **60 giây** ở luồng nền, tự đồng bộ múi giờ theo IP và hỗ trợ **Tiếng Việt / English** cùng **`°C` / `°F`**.
 
