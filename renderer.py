@@ -398,17 +398,70 @@ def _apply_widget_background(
         return ""
 
 
-def resolve_theme(theme_mode: str = "auto", now: datetime | None = None, style: str = "serif") -> ThemePalette:
+def is_system_dark_mode() -> bool:
+    """Detect the current OS Light/Dark mode on Windows, macOS, and Linux desktops."""
+    if sys.platform == "win32":
+        try:
+            import winreg
+
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                for val_name in ("AppsUseLightTheme", "SystemUsesLightTheme"):
+                    try:
+                        val, _ = winreg.QueryValueEx(key, val_name)
+                        return int(val) == 0
+                    except OSError:
+                        continue
+        except Exception:
+            return False
+        return False
+
+    if sys.platform == "darwin":
+        try:
+            res = subprocess.run(
+                ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                capture_output=True,
+                text=True,
+                timeout=1.5,
+            )
+            return res.returncode == 0 and "dark" in (res.stdout or "").strip().lower()
+        except Exception:
+            return False
+
+    if sys.platform.startswith("linux"):
+        try:
+            res = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+                capture_output=True,
+                text=True,
+                timeout=1.5,
+            )
+            if res.returncode == 0 and "prefer-dark" in (res.stdout or "").lower():
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def resolve_theme(
+    theme_mode: str = "auto",
+    now: datetime | None = None,
+    style: str = "serif",
+    system_is_dark: bool | None = None,
+) -> ThemePalette:
     mode = (theme_mode or "auto").strip().lower()
     st = (style or "serif").strip().lower()
     if mode == "dark":
         is_dark = True
     elif mode == "light":
         is_dark = False
+    elif mode in ("system", "os"):
+        is_dark = is_system_dark_mode() if system_is_dark is None else bool(system_is_dark)
     else:
         if now is None:
             now = datetime.now()
-        is_dark = now.hour >= 19 or now.hour < 6
+        # Light from 06:00 through 17:59 (6:00 AM - 5:59 PM), Dark from 18:00 through 05:59
+        is_dark = now.hour >= 18 or now.hour < 6
 
     if st in ("sans", "esl"):
         return MINIMAL_SANS_DARK if is_dark else MINIMAL_SANS_LIGHT

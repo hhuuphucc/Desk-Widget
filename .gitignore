@@ -1,5 +1,6 @@
-# Private local config, personal calendar caches, custom icons/logos/backgrounds & runtime files
+# Private local config, session tokens, personal calendar caches & runtime files
 config.json
+session.json
 *.ics
 custom_icon_*.ico
 custom_logo_*.*

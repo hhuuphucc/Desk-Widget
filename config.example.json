@@ -22,6 +22,10 @@
   "scale": 1.0,
   "window_x": null,
   "window_y": null,
+  "auth": {
+    "supabase_url": "",
+    "supabase_anon_key": ""
+  },
   "weather": {
     "auto_location": true,
     "city": "Hà Nội",

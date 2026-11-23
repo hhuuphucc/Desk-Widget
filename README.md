@@ -14,7 +14,7 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
   - **Botanical (`botanical`):** Textured cold-pressed paper card with `Palatino Linotype Bold` headings + `Candara` body typography (rendered crisp via `2×`/`3×` HiDPI supersampling), supporting custom widget background & circular header logo.
   - **Classic Serif (`serif`):** Textured paper card with `Palatino Linotype Bold` headings + `Segoe UI` body text (automatically maps to `Georgia Bold` + `Arial`/`SFNS` on macOS).
   - **Minimal Sans (`sans`):** Clean 3-color E-Ink style (`Segoe UI`, high-contrast Black/White/Red) with `296×128` 3-color ESL bitmap export.
-  - **Theme Modes:** `auto` (Light `06:00–18:59`, Dark `19:00–05:59`), `light`, or `dark`.
+  - **Theme Modes:** `auto` (Light `06:00–17:59`, Dark `18:00–05:59`), `system` (follow Windows/macOS Light or Dark appearance automatically), `light`, or `dark`.
 - **Multi-Source Google Calendar & 1-Month Grid:**
   - Manage multiple independent `.ics` calendars with custom labels (secret/public `.ics` URLs, Google Calendar `/embed?src=...` links, `webcal://`, or local `.ics` files).
   - Automatically updates calendar & header clock timezone based on IP location when travelling abroad (when IP geolocation is enabled).
@@ -98,14 +98,14 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to set a custom city, coordinates, or IANA timezone manually.
 4. **Right-Click Context Menu Quick Actions:**
    - `Visual style`: switch between **Botanical**, **Classic Serif**, and **Minimal Sans**.
-   - `E-Ink theme`: `Auto`, `Light`, or `Dark`.
+   - `E-Ink theme`: `Auto by time (Light 6 AM–5:59 PM)`, `Follow system (Light / Dark)`, `Light`, or `Dark`.
    - `Title alignment`: `Left`, `Center`, or `Right`.
    - `Temperature unit`: `Celsius (°C)` or `Fahrenheit (°F)`.
    - `Language / Ngôn ngữ`: `Tiếng Việt` or `English`.
    - `Background & Logo`: choose a custom widget background (syncs with the circular header icon) or hide/customize the header icon. Fresh clones start with a clean neutral card for personal customization.
    - `Start with Windows` / `Launch on macOS login`: manages Windows Startup shortcut or macOS `LaunchAgent`.
    - `Change icon / logo...`: creates a rounded-corner app icon for windows and shortcuts.
-   - `Check for updates (v1.0.0)...`: checks [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) for a newer version and automatically picks the matching download (`Windows .exe`, `macOS Apple Silicon .dmg`, or `macOS Intel .dmg`).
+   - `Check for updates (v1.1.0)...`: checks [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) for a newer version and automatically picks the matching download (`Windows .exe`, `macOS Apple Silicon .dmg`, or `macOS Intel .dmg`).
    - `Always on top` / `Send behind windows`: pin on top or keep cleanly behind active windows.
 
 ### Quick Interactions
@@ -127,14 +127,16 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 
 ```text
 desk-widget/
-├── widget.py           # Tkinter UI, interactions, menus, settings & auto-start
+├── widget.py           # Tkinter UI, interactions, auth dialogs, Admin Panel & auto-start
+├── auth_client.py      # Supabase Auth, 3-tier RBAC RPCs & DPAPI/0600 session storage
+├── supabase_schema.sql # PostgreSQL tables, RLS policies, super_admin trigger & 11-digit Co-Admin ID generator
 ├── renderer.py         # Pillow HiDPI renderer (Botanical, Classic Serif, Minimal Sans)
 ├── calendar_client.py  # .ics / embed URL fetcher, parser & meeting-link detector
 ├── weather_client.py   # Open-Meteo 7-day weather & IP geolocation/timezone client
 ├── system_client.py    # Windows & macOS (Apple Silicon/Intel) RAM/CPU/GPU/temp monitor
 ├── updater.py          # GitHub Releases version checker & OS asset selector
 ├── build_app.py        # PyInstaller standalone packaging script (.exe / .dmg)
-├── config.example.json # Public config template (personal config.json is gitignored)
+├── config.example.json # Public config template (personal config.json & session.json are gitignored)
 ├── requirements.txt    # Python package dependencies
 ├── start_widget.vbs    # Silent background launcher for Windows
 ├── run_widget.bat      # Console launcher for Windows debugging
@@ -142,6 +144,18 @@ desk-widget/
 ├── test_widget.py      # Automated unit tests
 └── assets/             # Optional local visual assets (personal images are gitignored)
 ```
+
+### Role-Based Access Control (Optional Free Supabase Setup)
+
+- **Offline Demo Mode:** Fresh downloads open immediately with an offline preview; users can sign up or sign in with Email + Password (plus built-in Email OTP password reset) to sync personal `.ics` calendars.
+- **3-Tier RBAC:** `super_admin` (unique immutable owner account, exclusive 11-digit CSPRNG Co-Admin ID generator/revoker, full account & config control) → `admin` (Co-Admin signed in with Email + Password + 11-digit Admin ID) → `user`.
+- To enable on your own free [Supabase](https://supabase.com) project:
+  1. Run [supabase_schema.sql](supabase_schema.sql) once in the Supabase **SQL Editor** (and customize the Reset Password email template to display `{{ .Token }}` for in-app OTP recovery).
+  2. Set `SUPABASE_URL` & `SUPABASE_ANON_KEY` in `auth_client.py` (or in **Sign in → Supabase Server**).
+  3. Sign up with your owner email inside the app, then run once in SQL Editor:
+     ```sql
+     SELECT public.bootstrap_super_admin('<your-owner-email>', '<your-11-digit-super-id>');
+     ```
 
 ### Unit Tests
 
@@ -163,7 +177,7 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
   - **Botanical (`botanical`):** Nền giấy vân mịn, phối font `Palatino Linotype Bold` + `Candara` thanh mảnh (render sắc nét bằng HiDPI `2×`/`3×`, hỗ trợ gắn ảnh nền & logo tròn).
   - **Classic Serif (`serif`):** Nền giấy vân mịn, tiêu đề font có chân `Palatino Linotype Bold` + nội dung `Segoe UI` rõ nét (trên macOS tự chuyển sang `Georgia Bold` + `Arial`/`SFNS` hỗ trợ đầy đủ tiếng Việt).
   - **Minimal Sans (`sans`):** Font hiện đại không chân sắc nét (Đen – Trắng – Đỏ) và hỗ trợ xuất ảnh bitmap `296×128` 3 màu.
-  - **Chế độ màu:** `auto` (Sáng `06:00–18:59`, tự sang Dark Mode `19:00–05:59`), `light`, hoặc `dark`.
+  - **Chế độ màu:** `auto` (Sáng `06:00–17:59`, tự sang Dark Mode `18:00–05:59`), `system` (tự động đổi Sáng/Tối theo giao diện Windows/macOS), `light`, hoặc `dark`.
 - **Google Calendar đa nguồn & Lịch 1 tháng:**
   - Quản lý nhiều lịch độc lập kèm **tên lịch riêng** (hỗ trợ link `.ics` bí mật, `.ics` công khai, link Google Calendar `/embed?src=...`, `webcal://`, hoặc file `.ics` trên máy).
   - Tự động cập nhật múi giờ lịch & đồng hồ theo vị trí IP khi đi nước ngoài (nếu bật định vị IP).
@@ -240,14 +254,14 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - Mặc định bật **Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)**. Nếu muốn cố định thành phố khác, bỏ tick rồi gõ tên thành phố → **Tìm tọa độ** (và chỉnh `Múi giờ` nếu cần).
 4. **Menu chuột phải nhanh:**
    - `Phong cách giao diện`: chuyển đổi giữa **Botanical**, **Classic Serif** và **Minimal Sans**.
-   - `Giao diện E-Ink`: chọn `Tự động`, `Sáng`, hoặc `Tối`.
+   - `Giao diện E-Ink`: chọn `Tự động theo giờ (Sáng 6h–17:59)`, `Theo giao diện máy (Sáng / Tối)`, `Sáng`, hoặc `Tối`.
    - `Vị trí tên tiêu đề`: chọn `Trái`, `Giữa`, hoặc `Phải`.
    - `Đơn vị nhiệt độ`: chọn `Độ C (°C)` hoặc `Độ F (°F)`.
    - `Language / Ngôn ngữ`: chuyển đổi giữa **Tiếng Việt** và **English**.
    - `Nền & Logo widget`: chọn **Đổi ảnh nền widget (đồng bộ icon tròn)** để đổi hình nền widget — icon tròn cạnh tên tiêu đề tự động đổi theo ảnh nền của widget (và theo chế độ Sáng/Tối) và căn thẳng hàng cùng tên (hoặc chọn ảnh riêng / ẩn). Khi clone mới từ GitHub sẽ mặc định nền sạch trung tính để mỗi người tự cá nhân hóa.
    - `Tự khởi động`: tự tạo/xóa shortcut Startup trên Windows hoặc LaunchAgent trên macOS.
    - `Đổi icon / logo...`: chọn ảnh `.png`, `.jpg`, `.webp` hoặc `.ico` bất kỳ để tự bo góc làm icon cho cửa sổ và shortcut Desktop.
-   - `Kiểm tra cập nhật (v1.0.0)...`: kiểm tra phiên bản mới từ [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) và mở đúng file tải cho hệ điều hành đang dùng (`Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`).
+   - `Kiểm tra cập nhật (v1.1.0)...`: kiểm tra phiên bản mới từ [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) và mở đúng file tải cho hệ điều hành đang dùng (`Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`).
    - `Luôn nổi trên cùng` / `Ẩn ra sau các cửa sổ khác`: ghim nổi hoặc để widget nằm gọn phía sau các tab đang làm việc.
 
 ### Thao tác nhanh trên Widget
@@ -264,6 +278,18 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
 | **Nhấn `Esc`** | Đóng nhanh cửa sổ popup đang mở |
 | **Nhấn đúp** (vùng trống) | Mở bảng Cài đặt |
 | **Chuột phải** | Mở menu tùy chỉnh nhanh |
+
+### Phân quyền 3 cấp với Supabase Free (Tùy chọn)
+
+- **Xem thử Offline → Đăng nhập để đồng bộ:** Người mới tải app vẫn thấy widget mẫu Offline ngay; bấm **Đăng nhập / Đăng ký** (Email + Mật khẩu, có sẵn nút **Quên mật khẩu?** dùng mã OTP gửi qua Email) để mở khóa và đồng bộ lịch cá nhân.
+- **Phân quyền 3 cấp (`Super Admin` / `Co-Admin` / `User`):** Tài khoản `super_admin` được bảo vệ cứng bởi **PostgreSQL RLS + Trigger** (không Co-Admin nào xóa/sửa được) và **chỉ Super Admin** mới tự sinh/cấp lại **Co-Admin ID 11 chữ số ngẫu nhiên duy nhất** (cam kết không trùng Super ID).
+- **Cách kích hoạt trên Supabase miễn phí:**
+  1. Tạo project miễn phí tại [supabase.com](https://supabase.com), chạy file [supabase_schema.sql](supabase_schema.sql) trong **SQL Editor** (và chỉnh Email Template *Reset Password* hiển thị `{{ .Token }}` để dùng mã OTP ngay trong app).
+  2. Điền `SUPABASE_URL` & `SUPABASE_ANON_KEY` vào `auth_client.py` (hoặc nhập trực tiếp ở mục **Cấu hình Supabase** trong cửa sổ Đăng nhập).
+  3. Mở app tự **Đăng ký** tài khoản chủ của bạn, sau đó chạy đúng 1 dòng trong **SQL Editor**:
+     ```sql
+     SELECT public.bootstrap_super_admin('<email-chu-so-huu>', '<super-id-11-so-cua-ban>');
+     ```
 
 ### Kiểm tra hoạt động (Unit Tests)
 
