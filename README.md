@@ -1,12 +1,13 @@
 # desk-widget
 
-**English** · [Tiếng Việt](#tiếng-việt)
+**English** · [Tiếng Việt](#tiếng-việt) · [Important Notes (`INFO.md`)](INFO.md)
 
 > ### Download & Run — No Git or Python Required / Tải về chạy ngay (Không cần Git hay Python)
 > - **All Releases:** [**GitHub Releases (Latest)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
 > - **Windows 10/11 (`.exe`):** [**Download `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(First run SmartScreen: **More info → Run anyway**)*
 > - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Download `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(First run: drag to Applications, **Right-click → Open**)*
 > - **macOS Intel (`.dmg`):** [**Download `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+> - **Notes & Troubleshooting:** Read [**`INFO.md`**](INFO.md) for IP geolocation/VPN exceptions, manual `City` / `Lat/Lon` / `Timezone` tips, real-time CPU popup details, and Windows/macOS first-launch notes.
 
 ---
 
@@ -102,18 +103,10 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
    - Open [Google Calendar](https://calendar.google.com) → **Settings** → pick your calendar → scroll to **Integrate calendar**.
    - Click the eye icon or Copy button on **Secret address in iCal format** (avoid selecting masked `••••` bullets).
    - Click **`+ Add calendar`** in widget Settings, enter a name and URL, then click **Save & Refresh**.
-3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to set a custom city, coordinates, or IANA timezone manually.
-4. **Right-Click Context Menu Quick Actions:**
-   - `Visual style`: switch between **Botanical**, **Classic Serif**, and **Minimal Sans**.
-   - `E-Ink theme`: `Auto by time (Light 6 AM–5:59 PM)`, `Follow system (Light / Dark)`, `Light`, or `Dark`.
-   - `Title alignment`: `Left`, `Center`, or `Right`.
-   - `Temperature unit`: `Celsius (°C)` or `Fahrenheit (°F)`.
-   - `Language / Ngôn ngữ`: `Tiếng Việt` or `English`.
-   - `Background & Logo`: choose a custom widget background (syncs with the circular header icon) or hide/customize the header icon. Fresh clones start with a clean neutral card for personal customization.
-   - `Start with Windows` / `Launch on macOS login`: manages Windows Startup shortcut or macOS `LaunchAgent`.
-   - `Change icon / logo...`: creates a rounded-corner app icon for windows and shortcuts.
-   - `Check for updates (v1.1.1)...`: checks [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) for a newer version and automatically picks the matching download (`Windows .exe`, `macOS Apple Silicon .dmg`, or `macOS Intel .dmg`).
-   - `Always on top` / `Send behind windows`: pin on top or keep cleanly behind active windows.
+3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to unlock `City`, `Find coords`, `Lat/Lon`, and `Timezone` manually. *(See [`INFO.md`](INFO.md#1-travelling-anywhere-in-the-world-auto-detect-via-ip) for IP/VPN caveats and manual coordinate/timezone tips.)*
+4. **In Settings vs Right-Click Menu:**
+   - **Inside Settings:** Change **Visual style** (`Botanical` / `Classic Serif` / `Minimal Sans`), **E-Ink theme** (`auto` / `system` / `light` / `dark`), **Title alignment**, **Temperature unit** (`°C` / `°F`), **Language**, **Auto-start**, **Always on top** / **Send behind**, **Background & Header Logo**, and **App Icon**. *(Fresh clones start with a clean neutral card for personal customization.)*
+   - **Streamlined Right-Click Menu:** Account sign-in / profile / Admin Panel, `Refresh now`, `Settings...`, `Export ESL (296×128 PNG)...`, `Check for updates (v1.1.1)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
 
 ### Quick Interactions
 
@@ -134,6 +127,7 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 
 ```text
 desk-widget/
+├── INFO.md             # User guide & caveats (IP geolocation, Lat/Lon, CPU popup, Win/macOS tips)
 ├── widget.py           # Tkinter UI, interactions, auth dialogs, Admin Panel & auto-start
 ├── auth_client.py      # Supabase Auth, 3-tier RBAC RPCs & DPAPI/0600 session storage
 ├── supabase_schema.sql # PostgreSQL tables, RLS policies, super_admin trigger & 11-digit Co-Admin ID generator
@@ -174,13 +168,14 @@ python test_widget.py -v
 
 ## Tiếng Việt
 
-[English](#english) · **Tiếng Việt**
+[English](#english) · **Tiếng Việt** · [Lưu ý & Hướng dẫn chi tiết (`INFO.md`)](INFO.md#tiếng-việt)
 
 > **Tải về chạy ngay (Không cần cài Git hay Python):**
 > - **Trang phát hành:** [**GitHub Releases (Bản mới nhất)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
 > - **Windows 10/11 (`.exe`):** [**Tải `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(Lần đầu nếu SmartScreen hỏi: **More info → Run anyway**)*
 > - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Tải `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
 > - **macOS Intel (`.dmg`):** [**Tải `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
+> - **Lưu ý quan trọng khi dùng:** Xem file [**`INFO.md`**](INFO.md#tiếng-việt) để biết chi tiết về định vị IP / VPN, tự nhập `Thành phố` / `Lat/Lon` / `Múi giờ`, giải thích chỉ số CPU khi bấm xem chi tiết và lưu ý Windows/macOS.
 
 Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Apple Silicon M1/M2/M3/M4 & Intel)** (`Tkinter` + `Pillow`), hỗ trợ ba phong cách kiểu chữ & giao diện: **Botanical**, **Classic Serif** và **Minimal Sans**. Tự động làm mới mỗi **60 giây** ở luồng nền, tự đồng bộ múi giờ theo IP và hỗ trợ **Tiếng Việt / English** cùng **`°C` / `°F`**.
 
@@ -264,19 +259,11 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - Mở [Google Calendar](https://calendar.google.com) → biểu tượng bánh răng **Cài đặt** → chọn lịch ở cột trái → kéo xuống mục **Tích hợp lịch**.
    - Bấm **biểu tượng con mắt (Hiện)** hoặc nút **Sao chép** ở dòng **Địa chỉ bí mật ở định dạng iCal** (tránh bôi đen trực tiếp nếu Google đang che bằng dấu `••••`).
    - Trong phần **Danh sách lịch** của widget, bấm **`+ Thêm link lịch`**, đặt **Tên lịch** (ví dụ `Cá nhân`, `Công việc`), dán link vào rồi bấm **Lưu & Cập nhật**.
-3. **Thời tiết:**
-   - Mặc định bật **Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)**. Nếu muốn cố định thành phố khác, bỏ tick rồi gõ tên thành phố → **Tìm tọa độ** (và chỉnh `Múi giờ` nếu cần).
-4. **Menu chuột phải nhanh:**
-   - `Phong cách giao diện`: chuyển đổi giữa **Botanical**, **Classic Serif** và **Minimal Sans**.
-   - `Giao diện E-Ink`: chọn `Tự động theo giờ (Sáng 6h–17:59)`, `Theo giao diện máy (Sáng / Tối)`, `Sáng`, hoặc `Tối`.
-   - `Vị trí tên tiêu đề`: chọn `Trái`, `Giữa`, hoặc `Phải`.
-   - `Đơn vị nhiệt độ`: chọn `Độ C (°C)` hoặc `Độ F (°F)`.
-   - `Language / Ngôn ngữ`: chuyển đổi giữa **Tiếng Việt** và **English**.
-   - `Nền & Logo widget`: chọn **Đổi ảnh nền widget (đồng bộ icon tròn)** để đổi hình nền widget — icon tròn cạnh tên tiêu đề tự động đổi theo ảnh nền của widget (và theo chế độ Sáng/Tối) và căn thẳng hàng cùng tên (hoặc chọn ảnh riêng / ẩn). Khi clone mới từ GitHub sẽ mặc định nền sạch trung tính để mỗi người tự cá nhân hóa.
-   - `Tự khởi động`: tự tạo/xóa shortcut Startup trên Windows hoặc LaunchAgent trên macOS.
-   - `Đổi icon / logo...`: chọn ảnh `.png`, `.jpg`, `.webp` hoặc `.ico` bất kỳ để tự bo góc làm icon cho cửa sổ và shortcut Desktop.
-   - `Kiểm tra cập nhật (v1.1.1)...`: kiểm tra phiên bản mới từ [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) và mở đúng file tải cho hệ điều hành đang dùng (`Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`).
-   - `Luôn nổi trên cùng` / `Ẩn ra sau các cửa sổ khác`: ghim nổi hoặc để widget nằm gọn phía sau các tab đang làm việc.
+3. **Thời tiết & Tọa độ:**
+   - Mặc định bật **Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)**. Nếu muốn cố định thành phố khác, **bỏ tích** để mở khóa 5 ô (`Thành phố`, `Tìm tọa độ`, `Lat/Lon`, `Múi giờ`) rồi gõ tên thành phố → **Tìm tọa độ** (và chỉnh `Múi giờ` nếu muốn xem giờ nơi đó). *(Xem thêm các ngoại lệ mạng 4G/VPN & mẹo tìm tọa độ chuẩn tại [`INFO.md`](INFO.md#1-khi-đi-sang-tỉnh--thành--bang--nước-khác-bật-tự-động-theo-ip).)*
+4. **Cài đặt giao diện & Menu chuột phải:**
+   - **Trong Cài đặt:** Chỉnh `Phong cách giao diện` (**Botanical / Classic Serif / Minimal Sans**), `Giao diện E-Ink` (`auto / system / light / dark`), `Vị trí tên tiêu đề`, `Độ C / Độ F`, `Ngôn ngữ`, `Tự khởi động`, `Luôn nổi trên cùng` / `Ẩn ra sau ngay`, `Đổi nền / Logo` (icon tròn cạnh tên đồng bộ theo nền widget), và `Đổi icon app...`.
+   - **Menu chuột phải gọn nhẹ:** Quản lý tài khoản / Bảng quản trị, `Làm mới ngay`, `Cài đặt...`, `Xuất ảnh ESL (296×128 PNG)...`, `Kiểm tra cập nhật (v1.1.1)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
 
 ### Thao tác nhanh trên Widget
 

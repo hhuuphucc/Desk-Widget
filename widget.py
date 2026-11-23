@@ -1819,7 +1819,11 @@ class ESLDeskWidget:
 
         chk_auto = ttk.Checkbutton(
             frm,
-            text="Auto-detect location & calendar timezone via IP" if is_en else "Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)",
+            text=(
+                "Auto-detect location & calendar timezone via IP (uncheck to edit manually)"
+                if is_en
+                else "Tự động cập nhật vị trí & múi giờ lịch theo mạng IP (bỏ chọn để tự nhập)"
+            ),
             variable=var_auto_loc,
         )
         chk_auto.grid(row=7, column=0, columnspan=2, sticky="w", padx=10, pady=(2, 0))
@@ -1847,12 +1851,12 @@ class ESLDeskWidget:
         btn_lookup = ttk.Button(city_row, text="Find coords" if is_en else "Tìm tọa độ", command=_lookup_city)
         btn_lookup.pack(side="left")
         ttk.Label(city_row, text="Lat/Lon:").pack(side="left", padx=(10, 4))
-        ent_lat = ttk.Entry(city_row, textvariable=var_lat, width=7)
+        ent_lat = ttk.Entry(city_row, textvariable=var_lat, width=10)
         ent_lat.pack(side="left")
-        ent_lon = ttk.Entry(city_row, textvariable=var_lon, width=7)
+        ent_lon = ttk.Entry(city_row, textvariable=var_lon, width=10)
         ent_lon.pack(side="left", padx=(4, 0))
         ttk.Label(city_row, text="TZ:" if is_en else "Múi giờ:").pack(side="left", padx=(10, 4))
-        ent_tz = ttk.Entry(city_row, textvariable=var_tz, width=16)
+        ent_tz = ttk.Entry(city_row, textvariable=var_tz, width=20)
         ent_tz.pack(side="left")
 
         def _sync_loc_state(*_args) -> None:
