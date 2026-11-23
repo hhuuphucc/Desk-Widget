@@ -9,7 +9,11 @@ import sys
 import requests
 
 APP_VERSION = "1.1.1"
-GITHUB_REPO = "hhuuphucc/desk-widget"
+APP_AUTHOR = "hhuuphucc"
+APP_COPYRIGHT = "Copyright (c) 2026 hhuuphucc"
+APP_LICENSE = "MIT License"
+GITHUB_REPO = "hhuuphucc/Desk-Widget"
+REPO_URL = f"https://github.com/{GITHUB_REPO}"
 
 
 @dataclass

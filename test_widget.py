@@ -264,6 +264,26 @@ class TestESLWidget(unittest.TestCase):
                 widget._get_user_data_dir().replace("\\", "/").endswith("Library/Application Support/desk-widget")
             )
 
+        import plistlib
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ver_path = build_app._write_win_version_file(os.path.join(td, "win_version_info.txt"))
+            with open(ver_path, "r", encoding="utf-8") as vf:
+                ver_txt = vf.read()
+            self.assertIn("Copyright (c) 2026 hhuuphucc (MIT License)", ver_txt)
+            self.assertIn("LegalCopyright", ver_txt)
+
+            mac_app = os.path.join(td, "desk-widget.app")
+            os.makedirs(os.path.join(mac_app, "Contents"), exist_ok=True)
+            plist_file = os.path.join(mac_app, "Contents", "Info.plist")
+            with open(plist_file, "wb") as pf:
+                plistlib.dump({"CFBundleName": "old"}, pf)
+            build_app._patch_macos_info_plist(mac_app)
+            with open(plist_file, "rb") as pf:
+                patched = plistlib.load(pf)
+            self.assertEqual(patched["CFBundleIdentifier"], "com.deskwidget.app")
+            self.assertEqual(patched["NSHumanReadableCopyright"], "Copyright (c) 2026 hhuuphucc (MIT License)")
+
     def test_update_checker(self) -> None:
         from unittest.mock import MagicMock, patch
         from updater import check_for_update, is_newer_version, parse_version, pick_asset_for_platform

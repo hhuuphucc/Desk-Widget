@@ -92,7 +92,10 @@ from renderer import (
     resolve_theme,
 )
 from system_client import SystemMonitor, SystemStats, top_cpu_processes, top_gpu_processes, top_ram_processes
-from updater import APP_VERSION, GITHUB_REPO, UpdateCheckResult, check_for_update
+from updater import APP_COPYRIGHT, APP_LICENSE, APP_VERSION, GITHUB_REPO, REPO_URL, UpdateCheckResult, check_for_update
+
+__copyright__ = APP_COPYRIGHT
+__license__ = APP_LICENSE
 from weather_client import (
     DayForecast,
     WeatherClient,
@@ -1974,7 +1977,15 @@ class ESLDeskWidget:
         )
 
         btn_row = ttk.Frame(frm)
-        btn_row.grid(row=13, column=0, columnspan=2, sticky="e", pady=(10, 2), padx=10)
+        btn_row.grid(row=13, column=0, columnspan=2, sticky="ew", pady=(10, 2), padx=10)
+        lbl_copy = ttk.Label(
+            btn_row,
+            text=f"desk-widget v{APP_VERSION} · {APP_COPYRIGHT} ({APP_LICENSE})",
+            foreground="#64748B",
+            cursor="hand2",
+        )
+        lbl_copy.pack(side="left")
+        lbl_copy.bind("<Button-1>", lambda _e: webbrowser.open(REPO_URL))
 
         def _save() -> None:
             new_cals: list[dict] = []

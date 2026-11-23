@@ -5,11 +5,79 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import plistlib
 import shutil
 import subprocess
 import sys
 
+from updater import APP_AUTHOR, APP_COPYRIGHT, APP_LICENSE, APP_VERSION, parse_version
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def _write_win_version_file(out_path: str) -> str:
+    """Write PyInstaller VSVersionInfo file so Windows Properties shows Copyright & Version."""
+    parts = list(parse_version(APP_VERSION))
+    while len(parts) < 4:
+        parts.append(0)
+    ver_tuple = tuple(parts[:4])
+    legal_copy = f"{APP_COPYRIGHT} ({APP_LICENSE})"
+    content = f"""# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers={ver_tuple},
+    prodvers={ver_tuple},
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', {APP_AUTHOR!r}),
+            StringStruct('FileDescription', 'desk-widget - E-Ink Desktop Widget'),
+            StringStruct('FileVersion', {APP_VERSION!r}),
+            StringStruct('InternalName', 'desk-widget'),
+            StringStruct('LegalCopyright', {legal_copy!r}),
+            StringStruct('OriginalFilename', 'desk-widget.exe'),
+            StringStruct('ProductName', 'desk-widget'),
+            StringStruct('ProductVersion', {APP_VERSION!r})
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"""
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return out_path
+
+
+def _patch_macos_info_plist(app_path: str) -> None:
+    """Embed version and Copyright metadata into macOS .app bundle Info.plist."""
+    plist_path = os.path.join(app_path, "Contents", "Info.plist")
+    if not os.path.exists(plist_path):
+        return
+    with open(plist_path, "rb") as f:
+        data = plistlib.load(f)
+    data["CFBundleName"] = "desk-widget"
+    data["CFBundleDisplayName"] = "desk-widget"
+    data["CFBundleIdentifier"] = "com.deskwidget.app"
+    data["CFBundleShortVersionString"] = APP_VERSION
+    data["CFBundleVersion"] = APP_VERSION
+    data["NSHumanReadableCopyright"] = f"{APP_COPYRIGHT} ({APP_LICENSE})"
+    data["NSHighResolutionCapable"] = True
+    with open(plist_path, "wb") as f:
+        plistlib.dump(data, f)
 
 
 def _ensure_pyinstaller() -> None:
@@ -60,7 +128,8 @@ def build(public: bool = False) -> str:
         cmd.extend(["--icon", icon_file])
 
     if sys.platform == "win32":
-        cmd.append("--onefile")
+        ver_file = _write_win_version_file(os.path.join(build_dir, "win_version_info.txt"))
+        cmd.extend(["--version-file", ver_file, "--onefile"])
     else:
         cmd.append("--onedir")
 
@@ -75,6 +144,7 @@ def build(public: bool = False) -> str:
 
     if sys.platform == "darwin":
         app_path = os.path.join(dist_dir, "desk-widget.app")
+        _patch_macos_info_plist(app_path)
         arch = "apple-silicon" if platform.machine().lower() in ("arm64", "aarch64") else "intel"
         dmg_path = os.path.join(dist_dir, f"desk-widget-macos-{arch}.dmg")
         if os.path.exists(dmg_path):
