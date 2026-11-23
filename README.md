@@ -158,6 +158,29 @@ desk-widget/
      SELECT public.bootstrap_super_admin('<your-owner-email>', '<your-11-digit-super-id>');
      ```
 
+### Complete Uninstall (Remove 100% of App & Local Data)
+
+`desk-widget` does not modify the Windows Registry or install background system services. To remove it completely:
+
+1. **Quit & Turn off Auto-Start:** Right-click the widget → **Settings...** → uncheck **Auto-start** → **Save**, then Right-click → **Quit** *(or run the commands below if you already deleted the app)*.
+2. **Windows (`.exe` or Source):**
+   - Delete `desk-widget-windows-x64.exe` (or the cloned `desk-widget` folder).
+   - Remove the Startup shortcut, Desktop shortcut (if any), and `%APPDATA%\desk-widget` (`config.json`, encrypted `session.json`, custom images/icons, `widget.pid`):
+     ```powershell
+     Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
+     Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
+     Remove-Item ([Environment]::GetFolderPath('Desktop') + '\desk-widget.lnk') -Force -ErrorAction SilentlyContinue
+     Remove-Item "$env:APPDATA\desk-widget" -Recurse -Force -ErrorAction SilentlyContinue
+     ```
+3. **macOS (`.app` / `.dmg` or Source):**
+   - Unload the `LaunchAgent`, delete `/Applications/desk-widget.app` (or your source folder), and remove `~/Library/Application Support/desk-widget`:
+     ```bash
+     pkill -f desk-widget || true
+     launchctl unload ~/Library/LaunchAgents/com.deskwidget.app.plist 2>/dev/null || true
+     rm -f ~/Library/LaunchAgents/com.deskwidget.app.plist
+     rm -rf /Applications/desk-widget.app "$HOME/Library/Application Support/desk-widget"
+     ```
+
 ### Unit Tests
 
 ```bash
@@ -290,6 +313,29 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
   3. Mở app tự **Đăng ký** tài khoản chủ của bạn, sau đó chạy đúng 1 dòng trong **SQL Editor**:
      ```sql
      SELECT public.bootstrap_super_admin('<email-chu-so-huu>', '<super-id-11-so-cua-ban>');
+     ```
+
+### Gỡ bỏ hoàn toàn ứng dụng (Khi không dùng nữa)
+
+`desk-widget` **không ghi vào Windows Registry** và không cài dịch vụ nền hệ thống. Để xóa sạch 100% khỏi máy:
+
+1. **Thoát app & Tắt tự khởi động:** Chuột phải vào widget → **Cài đặt...** → bỏ tích **Tự mở cùng Windows / macOS** → **Lưu**, sau đó Chuột phải → **Thoát** *(nếu lỡ xóa app trước rồi thì chạy thẳng lệnh bên dưới)*.
+2. **Trên Windows (bản `.exe` hoặc mã nguồn):**
+   - Xóa file `desk-widget-windows-x64.exe` (hoặc xóa thư mục mã nguồn `desk-widget`).
+   - Chạy PowerShell dưới đây để xóa sạch shortcut Startup, shortcut Desktop (nếu có) và thư mục dữ liệu `%APPDATA%\desk-widget` (`config.json`, `session.json`, ảnh nền/icon tùy chỉnh, `widget.pid`):
+     ```powershell
+     Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
+     Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
+     Remove-Item ([Environment]::GetFolderPath('Desktop') + '\desk-widget.lnk') -Force -ErrorAction SilentlyContinue
+     Remove-Item "$env:APPDATA\desk-widget" -Recurse -Force -ErrorAction SilentlyContinue
+     ```
+3. **Trên macOS (bản `.dmg` / `.app` hoặc mã nguồn):**
+   - Mở Terminal chạy lệnh sau để tắt hẳn app, gỡ `LaunchAgent`, xóa `desk-widget.app` trong Applications (nếu chạy từ mã nguồn thì xóa thêm thư mục code) và xóa dữ liệu tại `~/Library/Application Support/desk-widget`:
+     ```bash
+     pkill -f desk-widget || true
+     launchctl unload ~/Library/LaunchAgents/com.deskwidget.app.plist 2>/dev/null || true
+     rm -f ~/Library/LaunchAgents/com.deskwidget.app.plist
+     rm -rf /Applications/desk-widget.app "$HOME/Library/Application Support/desk-widget"
      ```
 
 ### Kiểm tra hoạt động (Unit Tests)
