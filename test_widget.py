@@ -18,7 +18,9 @@ from renderer import (
     convert_temp,
     export_esl_bitmap,
     format_temp,
+    patch_widget_system_stats,
     render_screen,
+    render_widget_cached,
     render_widget_with_hits,
     resolve_theme,
 )
@@ -148,6 +150,17 @@ class TestESLWidget(unittest.TestCase):
         self.assertTrue(0 <= stats.cpu_pct <= 100)
         ram_procs = top_ram_processes(5)
         self.assertGreater(len(ram_procs), 0)
+
+        # Verify zero-block real-time polling + partial SYSTEM patch rendering
+        rt_stats = SystemMonitor().read(sample_interval=None, include_cpu_temp=False)
+        self.assertTrue(0 <= rt_stats.cpu_pct <= 100)
+        cal = parse_ics_for_date([], tz_name="Asia/Ho_Chi_Minh")
+        weather = WeatherData("Hà Nội", 24, "Mây", "cloud", 19, 27, 20, [], datetime.now())
+        _, _, _, _, cache = render_widget_cached(cal, weather, stats, style="botanical", theme_mode="dark")
+        updated_stats = SystemStats(88, 76, 18.2, 24.0, 64, "RTX 3050 Ti", 2048, 4096, 65.0, 61.0)
+        patched_img, patched_hits, _ = patch_widget_system_stats(cache, updated_stats, temp_unit="C", lang="vi")
+        self.assertEqual(patched_img.size, (480, 224))
+        self.assertEqual({h.payload for h in patched_hits if h.action == "inspect_system"}, {"ram", "cpu", "gpu"})
 
     def test_auto_location_resolve(self) -> None:
         client = WeatherClient()

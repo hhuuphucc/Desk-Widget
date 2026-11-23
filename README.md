@@ -30,8 +30,9 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
   - Auto-detects location & timezone via IP or allows manual city lookup / coordinates / timezone.
   - Instant **`°C` ↔ `°F`** switching (click the temperature next to `SYSTEM`, use the right-click menu, or change it in **Settings**).
   - Click any `Mon..Sun` tile for daily min–max temperature, rain probability, precipitation, wind speed, UV index, and hourly slots.
-- **System & Hardware Monitor (`RAM / CPU / GPU & Temperature`):**
-  - Displays RAM (`GB` & `%`), CPU (`%`), GPU (Windows via `nvidia-smi`; macOS Intel & Apple Silicon M1–M4 via `ioreg IOAccelerator`), and machine temperature next to `SYSTEM`.
+- **Real-Time System & Hardware Monitor (`RAM / CPU / GPU & Temperature`, 2s refresh):**
+  - Displays RAM (`GB` & `%`), CPU (`%`), GPU (Windows zero-subprocess `nvml.dll` with `nvidia-smi` fallback; macOS Intel & Apple Silicon M1–M4 via throttled `ioreg IOAccelerator`), and machine temperature next to `SYSTEM`.
+  - Uses ultra-lightweight partial region repainting (`patch_widget_system_stats`, updating only the `SYSTEM` quadrant when values change) so real-time 2-second monitoring keeps idle CPU overhead near zero (`~0.1%`).
   - Click the `RAM`, `CPU`, or `GPU` bars to inspect top resource-consuming processes.
 - **Bilingual UI & Custom Widget Background:**
   - Switch UI language between **English** and **Tiếng Việt** anytime.
@@ -111,7 +112,7 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
    - `Background & Logo`: choose a custom widget background (syncs with the circular header icon) or hide/customize the header icon. Fresh clones start with a clean neutral card for personal customization.
    - `Start with Windows` / `Launch on macOS login`: manages Windows Startup shortcut or macOS `LaunchAgent`.
    - `Change icon / logo...`: creates a rounded-corner app icon for windows and shortcuts.
-   - `Check for updates (v1.1.0)...`: checks [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) for a newer version and automatically picks the matching download (`Windows .exe`, `macOS Apple Silicon .dmg`, or `macOS Intel .dmg`).
+   - `Check for updates (v1.1.1)...`: checks [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) for a newer version and automatically picks the matching download (`Windows .exe`, `macOS Apple Silicon .dmg`, or `macOS Intel .dmg`).
    - `Always on top` / `Send behind windows`: pin on top or keep cleanly behind active windows.
 
 ### Quick Interactions
@@ -199,8 +200,9 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
   - Tự động xác định vị trí & múi giờ theo mạng (IP) hoặc cho phép nhập tay tên thành phố / tọa độ / múi giờ.
   - Hỗ trợ chuyển đổi đơn vị nhiệt độ **`°C` ↔ `°F`** (nhấn trực tiếp vào dòng nhiệt độ cạnh `HỆ THỐNG`, chọn trong menu chuột phải, hoặc chỉnh trong **Cài đặt**).
   - Bấm vào từng ngày `T2..CN` để xem nhiệt độ min–max, % mưa, lượng mưa, gió, UV và dự báo theo khung giờ.
-- **Giám sát hệ thống (RAM / CPU / GPU & Nhiệt độ máy):**
-  - Hiển thị mức sử dụng RAM (`GB` & `%`), CPU (`%`), GPU (Windows qua `nvidia-smi`; macOS Intel & Apple Silicon M1–M4 qua `ioreg IOAccelerator`) và nhiệt độ máy cạnh chữ `HỆ THỐNG`.
+- **Giám sát hệ thống Real-time mỗi `2 giây` (RAM / CPU / GPU & Nhiệt độ máy):**
+  - Hiển thị mức sử dụng RAM (`GB` & `%`), CPU (`%`), GPU (Windows đọc trực tiếp qua `nvml.dll` không mở tiến trình phụ, fallback `nvidia-smi`; macOS Intel & Apple Silicon M1–M4 qua `ioreg IOAccelerator` giới hạn chu kỳ nhẹ) và nhiệt độ máy cạnh chữ `HỆ THỐNG`.
+  - Tối ưu chỉ vẽ lại đúng vùng `SYSTEM` khi thông số thay đổi (`patch_widget_system_stats`), nên chạy real-time vẫn cực nhẹ (`~0.1%` CPU trên Windows).
   - Bấm trực tiếp vào từng thanh `RAM`, `CPU`, hoặc `GPU` để xem danh sách ứng dụng đang sử dụng nhiều nhất.
 
 ### Yêu cầu hệ thống
@@ -273,7 +275,7 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - `Nền & Logo widget`: chọn **Đổi ảnh nền widget (đồng bộ icon tròn)** để đổi hình nền widget — icon tròn cạnh tên tiêu đề tự động đổi theo ảnh nền của widget (và theo chế độ Sáng/Tối) và căn thẳng hàng cùng tên (hoặc chọn ảnh riêng / ẩn). Khi clone mới từ GitHub sẽ mặc định nền sạch trung tính để mỗi người tự cá nhân hóa.
    - `Tự khởi động`: tự tạo/xóa shortcut Startup trên Windows hoặc LaunchAgent trên macOS.
    - `Đổi icon / logo...`: chọn ảnh `.png`, `.jpg`, `.webp` hoặc `.ico` bất kỳ để tự bo góc làm icon cho cửa sổ và shortcut Desktop.
-   - `Kiểm tra cập nhật (v1.1.0)...`: kiểm tra phiên bản mới từ [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) và mở đúng file tải cho hệ điều hành đang dùng (`Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`).
+   - `Kiểm tra cập nhật (v1.1.1)...`: kiểm tra phiên bản mới từ [GitHub Releases](https://github.com/hhuuphucc/desk-widget/releases) và mở đúng file tải cho hệ điều hành đang dùng (`Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`).
    - `Luôn nổi trên cùng` / `Ẩn ra sau các cửa sổ khác`: ghim nổi hoặc để widget nằm gọn phía sau các tab đang làm việc.
 
 ### Thao tác nhanh trên Widget

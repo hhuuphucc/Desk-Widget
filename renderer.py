@@ -549,26 +549,33 @@ def _load_font(filename: str, size: int) -> ImageFont.FreeTypeFont | ImageFont.I
 class _ScaledDraw:
     """Proxy over Pillow ImageDraw that scales vector geometry cleanly for HiDPI supersampling."""
 
-    def __init__(self, raw_draw: ImageDraw.ImageDraw, scale: float = 1.0) -> None:
+    def __init__(self, raw_draw: ImageDraw.ImageDraw, scale: float = 1.0, ox: float = 0.0, oy: float = 0.0) -> None:
         self._d = raw_draw
         self.scale = float(scale)
+        self.ox = float(ox)
+        self.oy = float(oy)
 
-    def _s(self, val: float) -> float:
-        return val * self.scale
+    def _x(self, x: float) -> float:
+        return (x - self.ox) * self.scale
+
+    def _y(self, y: float) -> float:
+        return (y - self.oy) * self.scale
 
     def _pts(self, xy):
         if isinstance(xy, (list, tuple)) and xy and isinstance(xy[0], (list, tuple)):
-            return [(p[0] * self.scale, p[1] * self.scale) for p in xy]
-        return [v * self.scale for v in xy]
+            return [(self._x(p[0]), self._y(p[1])) for p in xy]
+        return [self._x(xy[0]), self._y(xy[1]), self._x(xy[2]), self._y(xy[3])] if len(xy) == 4 else [
+            self._x(v) if i % 2 == 0 else self._y(v) for i, v in enumerate(xy)
+        ]
 
     def _w(self, width: int) -> int:
         return max(1, int(round(width * self.scale)))
 
     def text(self, xy, text: str, font=None, fill=None) -> None:
-        self._d.text((xy[0] * self.scale, xy[1] * self.scale), text, font=font, fill=fill)
+        self._d.text((self._x(xy[0]), self._y(xy[1])), text, font=font, fill=fill)
 
     def textbbox(self, xy, text: str, font=None):
-        return self._d.textbbox((xy[0] * self.scale, xy[1] * self.scale), text, font=font)
+        return self._d.textbbox((self._x(xy[0]), self._y(xy[1])), text, font=font)
 
     def line(self, xy, fill=None, width: int = 1) -> None:
         self._d.line(self._pts(xy), fill=fill, width=self._w(width))
@@ -590,7 +597,7 @@ class _ScaledDraw:
         self._d.polygon(self._pts(xy), fill=fill, outline=outline)
 
     def point(self, xy, fill=None) -> None:
-        x, y = xy[0] * self.scale, xy[1] * self.scale
+        x, y = self._x(xy[0]), self._y(xy[1])
         sz = max(1.0, self.scale)
         self._d.rectangle((x, y, x + sz - 1, y + sz - 1), fill=fill)
 
@@ -897,6 +904,108 @@ def _draw_inline_month_grid(
             hits.append(HitRegion(x1, y1, x2, y2, "select_date", d_obj))
 
 
+SYS_BOX_X1 = 8
+SYS_BOX_Y1 = 27
+SYS_BOX_Y2 = 125
+
+
+@dataclass
+class SystemPatchCache:
+    """Cached background crop & layout metadata for 2s real-time SYSTEM repaints without full-card redraws."""
+
+    clean_sys_hires: Image.Image
+    display_img: Image.Image
+    screen_1x: Image.Image
+    fonts: Fonts
+    theme: ThemePalette
+    ss: int
+    scale: float
+    factor: float
+    bezel_ox: int
+    bezel_oy: int
+    div_x: int
+    non_sys_hits: list[HitRegion]
+
+
+def _draw_system_section(
+    draw: _ScaledDraw,
+    f: Fonts,
+    th: ThemePalette,
+    lx: int,
+    lw: int,
+    system_stats: SystemStats,
+    temp_unit: str,
+    lang: str,
+    hits: list[HitRegion],
+) -> None:
+    is_en = (lang or "vi").strip().lower() == "en"
+    _draw_section_glyph(draw, lx, 31, th)
+    sys_hdr = "SYSTEM" if is_en else "HỆ THỐNG"
+    draw.text((lx + 16, 29), sys_hdr, font=f.section, fill=th.accent)
+
+    unit_norm = "F" if (temp_unit or "C").strip().upper() == "F" else "C"
+    sys_temp_txt = ""
+    if system_stats.cpu_temp_c is not None and system_stats.gpu_temp_c is not None:
+        sys_temp_txt = (
+            f"{format_temp(system_stats.cpu_temp_c, unit_norm, with_unit=True)}"
+            f" · GPU {format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=False)}"
+        )
+    elif system_stats.cpu_temp_c is not None:
+        sys_temp_txt = format_temp(system_stats.cpu_temp_c, unit_norm, with_unit=True)
+    elif system_stats.gpu_temp_c is not None:
+        sys_temp_txt = f"GPU {format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=True)}"
+
+    if sys_temp_txt:
+        hdr_end = lx + 16 + _text_width(draw, sys_hdr, f.section) + 6
+        max_tw = max(24, (lx + lw) - hdr_end)
+        tw = _text_width(draw, sys_temp_txt, f.small)
+        if tw > max_tw:
+            if system_stats.cpu_temp_c is not None and system_stats.gpu_temp_c is not None:
+                sys_temp_txt = (
+                    f"{convert_temp(system_stats.cpu_temp_c, unit_norm)}°/"
+                    f"{format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=True)}"
+                )
+            sys_temp_txt = _truncate_text(draw, sys_temp_txt, f.small, max_tw)
+            tw = _text_width(draw, sys_temp_txt, f.small)
+        tx = lx + lw - tw
+        draw.text((tx, 31), sys_temp_txt, font=f.small, fill=th.muted)
+        hits.append(HitRegion(tx - 2, 28, lx + lw, 44, "toggle_temp_unit", None))
+
+    y_ram = 46
+    ram_lbl = f"RAM {system_stats.ram_used_gb:.1f}/{system_stats.ram_total_gb:.1f}G"
+    ram_pct_txt = f"{system_stats.ram_pct}%"
+    draw.text((lx, y_ram), ram_lbl, font=f.label, fill=th.ink)
+    draw.text((lx + lw - _text_width(draw, ram_pct_txt, f.pct), y_ram), ram_pct_txt, font=f.pct, fill=th.ink)
+    _draw_progress_bar(draw, lx, y_ram + 15, lw, 6, system_stats.ram_pct, th)
+    hits.append(HitRegion(lx, y_ram, lx + lw, y_ram + 22, "inspect_system", "ram"))
+
+    y_cpu = 72
+    cpu_pct_txt = f"{system_stats.cpu_pct}%"
+    draw.text((lx, y_cpu), "CPU", font=f.label, fill=th.ink)
+    draw.text((lx + lw - _text_width(draw, cpu_pct_txt, f.pct), y_cpu), cpu_pct_txt, font=f.pct, fill=th.ink)
+    _draw_progress_bar(draw, lx, y_cpu + 15, lw, 6, system_stats.cpu_pct, th)
+    hits.append(HitRegion(lx, y_cpu, lx + lw, y_cpu + 22, "inspect_system", "cpu"))
+
+    y_gpu = 98
+    if system_stats.gpu_pct is not None:
+        if system_stats.gpu_vram_used_mb is not None and system_stats.gpu_vram_total_mb:
+            vram_u = system_stats.gpu_vram_used_mb / 1024.0
+            vram_t = system_stats.gpu_vram_total_mb / 1024.0
+            gpu_lbl = f"GPU {vram_u:.1f}/{vram_t:.1f}G"
+        else:
+            gpu_lbl = "GPU"
+        gpu_pct_txt = f"{system_stats.gpu_pct}%"
+        gpu_val = system_stats.gpu_pct
+    else:
+        gpu_lbl = "GPU"
+        gpu_pct_txt = "N/A"
+        gpu_val = 0
+    draw.text((lx, y_gpu), gpu_lbl, font=f.label, fill=th.ink)
+    draw.text((lx + lw - _text_width(draw, gpu_pct_txt, f.pct), y_gpu), gpu_pct_txt, font=f.pct, fill=th.ink)
+    _draw_progress_bar(draw, lx, y_gpu + 15, lw, 6, gpu_val, th)
+    hits.append(HitRegion(lx, y_gpu, lx + lw, y_gpu + 22, "inspect_system", "gpu"))
+
+
 def _draw_meeting_pill(
     draw: ImageDraw.ImageDraw,
     f: Fonts,
@@ -937,7 +1046,7 @@ def _render_screen_hires(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
-) -> tuple[Image.Image, list[HitRegion], ThemePalette]:
+) -> tuple[Image.Image, list[HitRegion], ThemePalette, Image.Image, Fonts, int]:
     """Render screen internally at `ss`x supersampled resolution (logical 480x224 coords)."""
     if now is None:
         now = datetime.now()
@@ -1052,75 +1161,10 @@ def _render_screen_hires(
     # 2. Left Column: RAM / CPU / GPU + 7-day Weather
     lx = 10
     lw = div_x - lx - 10
-
-    _draw_section_glyph(draw, lx, 31, th)
-    sys_hdr = "SYSTEM" if is_en else "HỆ THỐNG"
-    draw.text((lx + 16, 29), sys_hdr, font=f.section, fill=th.accent)
-
+    sys_x2 = div_x - 4
+    clean_sys_hires = img.crop((SYS_BOX_X1 * s, SYS_BOX_Y1 * s, sys_x2 * s, SYS_BOX_Y2 * s))
     unit_norm = "F" if (temp_unit or "C").strip().upper() == "F" else "C"
-    sys_temp_txt = ""
-    if system_stats.cpu_temp_c is not None and system_stats.gpu_temp_c is not None:
-        sys_temp_txt = (
-            f"{format_temp(system_stats.cpu_temp_c, unit_norm, with_unit=True)}"
-            f" · GPU {format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=False)}"
-        )
-    elif system_stats.cpu_temp_c is not None:
-        sys_temp_txt = format_temp(system_stats.cpu_temp_c, unit_norm, with_unit=True)
-    elif system_stats.gpu_temp_c is not None:
-        sys_temp_txt = f"GPU {format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=True)}"
-
-    if sys_temp_txt:
-        hdr_end = lx + 16 + _text_width(draw, sys_hdr, f.section) + 6
-        max_tw = max(24, (lx + lw) - hdr_end)
-        tw = _text_width(draw, sys_temp_txt, f.small)
-        if tw > max_tw:
-            if system_stats.cpu_temp_c is not None and system_stats.gpu_temp_c is not None:
-                sys_temp_txt = (
-                    f"{convert_temp(system_stats.cpu_temp_c, unit_norm)}°/"
-                    f"{format_temp(system_stats.gpu_temp_c, unit_norm, with_unit=True)}"
-                )
-            sys_temp_txt = _truncate_text(draw, sys_temp_txt, f.small, max_tw)
-            tw = _text_width(draw, sys_temp_txt, f.small)
-        tx = lx + lw - tw
-        draw.text((tx, 31), sys_temp_txt, font=f.small, fill=th.muted)
-        hits.append(HitRegion(tx - 2, 28, lx + lw, 44, "toggle_temp_unit", None))
-
-    # RAM
-    y_ram = 46
-    ram_lbl = f"RAM {system_stats.ram_used_gb:.1f}/{system_stats.ram_total_gb:.1f}G"
-    ram_pct_txt = f"{system_stats.ram_pct}%"
-    draw.text((lx, y_ram), ram_lbl, font=f.label, fill=th.ink)
-    draw.text((lx + lw - _text_width(draw, ram_pct_txt, f.pct), y_ram), ram_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_ram + 15, lw, 6, system_stats.ram_pct, th)
-    hits.append(HitRegion(lx, y_ram, lx + lw, y_ram + 22, "inspect_system", "ram"))
-
-    # CPU
-    y_cpu = 72
-    cpu_pct_txt = f"{system_stats.cpu_pct}%"
-    draw.text((lx, y_cpu), "CPU", font=f.label, fill=th.ink)
-    draw.text((lx + lw - _text_width(draw, cpu_pct_txt, f.pct), y_cpu), cpu_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_cpu + 15, lw, 6, system_stats.cpu_pct, th)
-    hits.append(HitRegion(lx, y_cpu, lx + lw, y_cpu + 22, "inspect_system", "cpu"))
-
-    # GPU
-    y_gpu = 98
-    if system_stats.gpu_pct is not None:
-        if system_stats.gpu_vram_used_mb is not None and system_stats.gpu_vram_total_mb:
-            vram_u = system_stats.gpu_vram_used_mb / 1024.0
-            vram_t = system_stats.gpu_vram_total_mb / 1024.0
-            gpu_lbl = f"GPU {vram_u:.1f}/{vram_t:.1f}G"
-        else:
-            gpu_lbl = "GPU"
-        gpu_pct_txt = f"{system_stats.gpu_pct}%"
-        gpu_val = system_stats.gpu_pct
-    else:
-        gpu_lbl = "GPU"
-        gpu_pct_txt = "N/A"
-        gpu_val = 0
-    draw.text((lx, y_gpu), gpu_lbl, font=f.label, fill=th.ink)
-    draw.text((lx + lw - _text_width(draw, gpu_pct_txt, f.pct), y_gpu), gpu_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_gpu + 15, lw, 6, gpu_val, th)
-    hits.append(HitRegion(lx, y_gpu, lx + lw, y_gpu + 22, "inspect_system", "gpu"))
+    _draw_system_section(draw, f, th, lx, lw, system_stats, unit_norm, lang, hits)
 
     _draw_fineline_rule(draw, lx, 127, lx + lw, 127, th.divider_soft, th.accent, with_dots=_is_paper(th))
 
@@ -1256,7 +1300,7 @@ def _render_screen_hires(
         draw, f, th, calendar_data, today, vy, vm, selected_date, rx, rw, month_top_y, hits, lang=lang
     )
 
-    return img.convert("RGB"), hits, th
+    return img.convert("RGB"), hits, th, clean_sys_hires, f, div_x
 
 
 def render_screen(
@@ -1278,7 +1322,7 @@ def render_screen(
     selected_weather_date: date | None = None,
 ) -> tuple[Image.Image, list[HitRegion], ThemePalette]:
     """Render crisp 480x224 screen image (2x supersampled), hit regions, and active theme."""
-    hires, hits, th = _render_screen_hires(
+    hires, hits, th, _, _, _ = _render_screen_hires(
         calendar_data,
         weather_data,
         system_stats,
@@ -1348,7 +1392,7 @@ def wrap_esl_bezel(
     return frame, (pad_left, pad_top)
 
 
-def render_widget_with_hits(
+def render_widget_cached(
     calendar_data: CalendarSummary,
     weather_data: WeatherData,
     system_stats: SystemStats,
@@ -1367,9 +1411,9 @@ def render_widget_with_hits(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
-) -> tuple[Image.Image, list[HitRegion], Image.Image, ThemePalette]:
+) -> tuple[Image.Image, list[HitRegion], Image.Image, ThemePalette, SystemPatchCache]:
     ss = max(2, int(math.ceil(float(scale) * 2.0)))
-    hires, raw_hits, th = _render_screen_hires(
+    hires, raw_hits, th, clean_sys_hires, f, div_x = _render_screen_hires(
         calendar_data,
         weather_data,
         system_stats,
@@ -1414,7 +1458,107 @@ def render_widget_with_hits(
         )
         for h in raw_hits
     ]
-    return out, scaled_hits, screen_1x, th
+    non_sys_hits = [h for h in scaled_hits if h.action not in ("toggle_temp_unit", "inspect_system")]
+    cache = SystemPatchCache(
+        clean_sys_hires=clean_sys_hires,
+        display_img=out,
+        screen_1x=screen_1x,
+        fonts=f,
+        theme=th,
+        ss=ss,
+        scale=float(scale),
+        factor=float(factor),
+        bezel_ox=int(ox),
+        bezel_oy=int(oy),
+        div_x=int(div_x),
+        non_sys_hits=non_sys_hits,
+    )
+    return out, scaled_hits, screen_1x, th, cache
+
+
+def patch_widget_system_stats(
+    cache: SystemPatchCache,
+    system_stats: SystemStats,
+    temp_unit: str = "C",
+    lang: str = "vi",
+) -> tuple[Image.Image, list[HitRegion], Image.Image]:
+    """Fast partial redraw of ONLY the SYSTEM (RAM/CPU/GPU) quadrant (~3-5ms vs ~100ms full card)."""
+    sys_x2 = cache.div_x - 4
+    lx = 10
+    lw = cache.div_x - lx - 10
+    patch_hires = cache.clean_sys_hires.copy()
+    draw = _ScaledDraw(ImageDraw.Draw(patch_hires), scale=float(cache.ss), ox=float(SYS_BOX_X1), oy=float(SYS_BOX_Y1))
+    sys_hits: list[HitRegion] = []
+    _draw_system_section(draw, cache.fonts, cache.theme, lx, lw, system_stats, temp_unit, lang, sys_hits)
+
+    pw_1x = sys_x2 - SYS_BOX_X1
+    ph_1x = SYS_BOX_Y2 - SYS_BOX_Y1
+    patch_1x = patch_hires.resize((pw_1x, ph_1x), Image.Resampling.LANCZOS)
+    cache.screen_1x.paste(patch_1x.convert("RGB"), (SYS_BOX_X1, SYS_BOX_Y1))
+
+    dx1 = int(round(SYS_BOX_X1 * cache.factor + cache.bezel_ox))
+    dy1 = int(round(SYS_BOX_Y1 * cache.factor + cache.bezel_oy))
+    dx2 = int(round(sys_x2 * cache.factor + cache.bezel_ox))
+    dy2 = int(round(SYS_BOX_Y2 * cache.factor + cache.bezel_oy))
+    pw_d, ph_d = max(1, dx2 - dx1), max(1, dy2 - dy1)
+    patch_scaled = patch_1x if (pw_d == pw_1x and ph_d == ph_1x) else patch_hires.resize((pw_d, ph_d), Image.Resampling.LANCZOS)
+    cache.display_img.paste(patch_scaled.convert("RGBA"), (dx1, dy1))
+
+    scaled_sys_hits = [
+        HitRegion(
+            x1=int(round(h.x1 * cache.factor + cache.bezel_ox)),
+            y1=int(round(h.y1 * cache.factor + cache.bezel_oy)),
+            x2=int(round(h.x2 * cache.factor + cache.bezel_ox)),
+            y2=int(round(h.y2 * cache.factor + cache.bezel_oy)),
+            action=h.action,
+            payload=h.payload,
+        )
+        for h in sys_hits
+    ]
+    return cache.display_img, [*cache.non_sys_hits, *scaled_sys_hits], cache.screen_1x
+
+
+def render_widget_with_hits(
+    calendar_data: CalendarSummary,
+    weather_data: WeatherData,
+    system_stats: SystemStats,
+    owner_name: str = "Desk Widget",
+    owner_align: str = "center",
+    theme_mode: str = "auto",
+    style: str = "serif",
+    temp_unit: str = "C",
+    lang: str = "vi",
+    logo_path: str | None = None,
+    bg_path: str | None = None,
+    show_esl_frame: bool = False,
+    scale: float = 1.0,
+    now: datetime | None = None,
+    view_year: int | None = None,
+    view_month: int | None = None,
+    selected_date: date | None = None,
+    selected_weather_date: date | None = None,
+) -> tuple[Image.Image, list[HitRegion], Image.Image, ThemePalette]:
+    out, hits, screen_1x, th, _ = render_widget_cached(
+        calendar_data,
+        weather_data,
+        system_stats,
+        owner_name=owner_name,
+        owner_align=owner_align,
+        theme_mode=theme_mode,
+        style=style,
+        temp_unit=temp_unit,
+        lang=lang,
+        logo_path=logo_path,
+        bg_path=bg_path,
+        show_esl_frame=show_esl_frame,
+        scale=scale,
+        now=now,
+        view_year=view_year,
+        view_month=view_month,
+        selected_date=selected_date,
+        selected_weather_date=selected_weather_date,
+    )
+    return out, hits, screen_1x, th
 
 
 def render_widget_image(

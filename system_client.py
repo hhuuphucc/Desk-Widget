@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ctypes
 from dataclasses import dataclass
+import os
 import re
 import shutil
 import subprocess
@@ -101,6 +103,78 @@ def _read_mac_gpu(default_name: str = "Mac GPU") -> tuple[int | None, str, int |
     except Exception:
         pass
     return util, default_name, v_used, v_total, gpu_temp_c
+
+
+class _NvmlUtil(ctypes.Structure):
+    _fields_ = [("gpu", ctypes.c_uint), ("memory", ctypes.c_uint)]
+
+
+class _NvmlMem(ctypes.Structure):
+    _fields_ = [("total", ctypes.c_ulonglong), ("free", ctypes.c_ulonglong), ("used", ctypes.c_ulonglong)]
+
+
+class _NvmlReader:
+    """Zero-subprocess NVIDIA GPU telemetry via Windows nvml.dll (~0.4ms/call vs ~60ms nvidia-smi.exe)."""
+
+    def __init__(self) -> None:
+        self._lib = None
+        self._handle = None
+        self._gpu_name: str = ""
+        self._failed: bool = False
+
+    def _ensure_init(self) -> bool:
+        if self._handle is not None and self._lib is not None:
+            return True
+        if self._failed or not IS_WINDOWS:
+            return False
+        candidates = (
+            os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "nvml.dll"),
+            r"C:\Program Files\NVIDIA Corporation\NVSMI\nvml.dll",
+        )
+        for path in candidates:
+            if not os.path.exists(path):
+                continue
+            try:
+                lib = ctypes.WinDLL(path)
+                if lib.nvmlInit_v2() != 0:
+                    continue
+                handle = ctypes.c_void_p()
+                if lib.nvmlDeviceGetHandleByIndex_v2(0, ctypes.byref(handle)) != 0:
+                    lib.nvmlShutdown()
+                    continue
+                name_buf = ctypes.create_string_buffer(96)
+                gname = "NVIDIA GPU"
+                if lib.nvmlDeviceGetName(handle, name_buf, 96) == 0:
+                    gname = _short_gpu_name(name_buf.value.decode("utf-8", errors="replace"))
+                self._lib = lib
+                self._handle = handle
+                self._gpu_name = gname
+                return True
+            except Exception:
+                continue
+        self._failed = True
+        return False
+
+    def read(self) -> tuple[int, str, int, int, float | None] | None:
+        if not self._ensure_init():
+            return None
+        try:
+            util = _NvmlUtil()
+            mem = _NvmlMem()
+            if self._lib.nvmlDeviceGetUtilizationRates(self._handle, ctypes.byref(util)) != 0:
+                return None
+            if self._lib.nvmlDeviceGetMemoryInfo(self._handle, ctypes.byref(mem)) != 0:
+                return None
+            temp_val = ctypes.c_uint()
+            gpu_temp_c: float | None = None
+            if self._lib.nvmlDeviceGetTemperature(self._handle, 0, ctypes.byref(temp_val)) == 0:
+                if 0 <= temp_val.value <= 130:
+                    gpu_temp_c = float(temp_val.value)
+            v_used = int(round(mem.used / (1024 * 1024)))
+            v_total = int(round(mem.total / (1024 * 1024)))
+            return max(0, min(100, int(util.gpu))), self._gpu_name, v_used, v_total, gpu_temp_c
+        except Exception:
+            return None
 
 
 def _read_nvidia_gpu() -> tuple[int, str, int, int, float | None] | None:
@@ -392,8 +466,11 @@ class SystemMonitor:
     def __init__(self) -> None:
         psutil.cpu_percent(interval=None)
         self._gpu_name: str = _detect_mac_gpu_name() if IS_MACOS else "GPU"
+        self._nvml = _NvmlReader() if IS_WINDOWS else None
         self._cpu_temp_c: float | None = None
         self._cpu_temp_checked_at: float = 0.0
+        self._last_gpu_info: tuple[int | None, str, int | None, int | None, float | None] | None = None
+        self._gpu_checked_at: float = 0.0
 
     def read(self, sample_interval: float | None = None, include_cpu_temp: bool = True) -> SystemStats:
         cpu = max(0, min(100, int(round(psutil.cpu_percent(interval=sample_interval)))))
@@ -401,17 +478,21 @@ class SystemMonitor:
         ram_pct = max(0, min(100, int(round(vm.percent))))
         ram_used = vm.used / (1024 ** 3)
         ram_total = vm.total / (1024 ** 3)
+        now_m = time.monotonic()
 
         if include_cpu_temp and (
-            self._cpu_temp_checked_at == 0.0 or (time.monotonic() - self._cpu_temp_checked_at) >= 30.0
+            self._cpu_temp_checked_at == 0.0 or (now_m - self._cpu_temp_checked_at) >= 30.0
         ):
-            self._cpu_temp_checked_at = time.monotonic()
+            self._cpu_temp_checked_at = now_m
             t_c = _read_cpu_temp_c()
             if t_c is not None:
                 self._cpu_temp_c = t_c
 
         if IS_MACOS:
-            gpu_pct, gpu_name, v_used, v_total, gpu_temp_c = _read_mac_gpu(self._gpu_name)
+            if self._last_gpu_info is None or (now_m - self._gpu_checked_at) >= 3.0:
+                self._gpu_checked_at = now_m
+                self._last_gpu_info = _read_mac_gpu(self._gpu_name)
+            gpu_pct, gpu_name, v_used, v_total, gpu_temp_c = self._last_gpu_info
             return SystemStats(
                 cpu_pct=cpu,
                 ram_pct=ram_pct,
@@ -425,29 +506,27 @@ class SystemMonitor:
                 gpu_temp_c=gpu_temp_c,
             )
 
-        gpu_info = _read_nvidia_gpu()
-        if gpu_info is not None:
+        gpu_info = self._nvml.read() if self._nvml is not None else None
+        if gpu_info is None:
+            # Fallback to spawning nvidia-smi.exe at most once per 4s if nvml.dll is unavailable
+            if self._last_gpu_info is None or (now_m - self._gpu_checked_at) >= 4.0:
+                self._gpu_checked_at = now_m
+                smi = _read_nvidia_gpu()
+                self._last_gpu_info = smi if smi is not None else (None, self._gpu_name, None, None, None)
+            gpu_pct, gpu_name, v_used, v_total, gpu_temp_c = self._last_gpu_info
+        else:
             gpu_pct, gpu_name, v_used, v_total, gpu_temp_c = gpu_info
             self._gpu_name = gpu_name
-            return SystemStats(
-                cpu_pct=cpu,
-                ram_pct=ram_pct,
-                ram_used_gb=ram_used,
-                ram_total_gb=ram_total,
-                gpu_pct=gpu_pct,
-                gpu_name=gpu_name,
-                gpu_vram_used_mb=v_used,
-                gpu_vram_total_mb=v_total,
-                cpu_temp_c=self._cpu_temp_c,
-                gpu_temp_c=gpu_temp_c,
-            )
 
         return SystemStats(
             cpu_pct=cpu,
             ram_pct=ram_pct,
             ram_used_gb=ram_used,
             ram_total_gb=ram_total,
-            gpu_pct=None,
-            gpu_name=self._gpu_name,
+            gpu_pct=gpu_pct,
+            gpu_name=gpu_name,
+            gpu_vram_used_mb=v_used,
+            gpu_vram_total_mb=v_total,
             cpu_temp_c=self._cpu_temp_c,
+            gpu_temp_c=gpu_temp_c,
         )

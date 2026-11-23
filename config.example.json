@@ -12,6 +12,7 @@
     }
   ],
   "refresh_seconds": 60,
+  "sys_refresh_seconds": 2.0,
   "timezone": "Asia/Ho_Chi_Minh",
   "style": "serif",
   "theme": "auto",

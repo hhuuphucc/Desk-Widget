@@ -70,10 +70,13 @@ from auth_client import (
 from renderer import (
     PAPER_SERIF_LIGHT,
     HitRegion,
+    SystemPatchCache,
     ThemePalette,
     export_esl_bitmap,
     format_temp,
     is_system_dark_mode,
+    patch_widget_system_stats,
+    render_widget_cached,
     render_widget_with_hits,
     resolve_theme,
 )
@@ -123,6 +126,7 @@ DEFAULT_CONFIG = {
     "logo_path": "",
     "calendars": [],
     "refresh_seconds": 60,
+    "sys_refresh_seconds": 2.0,
     "timezone": "Asia/Ho_Chi_Minh",
     "style": "serif",
     "theme": "auto",
@@ -458,6 +462,8 @@ class ESLDeskWidget:
         self._last_cal: CalendarSummary | None = None
         self._last_weather: WeatherData | None = None
         self._last_stats: SystemStats | None = None
+        self._sys_cache: SystemPatchCache | None = None
+        self._last_sys_sig: tuple | None = None
         self._active_theme: ThemePalette = PAPER_SERIF_LIGHT
         self._hit_map: list[HitRegion] = []
         self.last_screen: Image.Image | None = None
@@ -471,6 +477,7 @@ class ESLDeskWidget:
         self._last_fg: int | None = None
 
         self._refresh_lock = threading.Lock()
+        self._sys_lock = threading.Lock()
         self._drag_x = 0
         self._drag_y = 0
         self._moved = False
@@ -521,6 +528,7 @@ class ESLDeskWidget:
 
         self.trigger_refresh(force_weather=True)
         self._schedule_next_refresh()
+        self._schedule_sys_refresh()
         self._last_observed_dark: bool | None = None
         self.root.after(3000, self._theme_watchdog)
         self.root.after(1200, self._refresh_auth_async)
@@ -838,7 +846,7 @@ class ESLDeskWidget:
             "dark",
         ):
             effective_theme = self.auth_client.remote_settings.force_theme
-        img, hits, screen, th = render_widget_with_hits(
+        img, hits, screen, th, sys_cache = render_widget_cached(
             self._last_cal,
             self._last_weather,
             self._last_stats,
@@ -858,6 +866,8 @@ class ESLDeskWidget:
             selected_date=self.selected_date,
             selected_weather_date=self.selected_weather_date,
         )
+        self._sys_cache = sys_cache
+        self._last_sys_sig = self._stats_sig(self._last_stats)
         self._active_theme = th
         self._last_observed_dark = th.is_dark
         self._hit_map = hits
@@ -865,6 +875,20 @@ class ESLDeskWidget:
         self._apply_image(img)
         if not self.cfg.get("always_on_top", False):
             self.root.after(20, self._apply_z_order)
+
+    @staticmethod
+    def _stats_sig(stats: SystemStats | None) -> tuple | None:
+        if stats is None:
+            return None
+        return (
+            stats.cpu_pct,
+            stats.ram_pct,
+            round(stats.ram_used_gb, 1),
+            stats.gpu_pct,
+            round((stats.gpu_vram_used_mb or 0) / 1024.0, 1) if stats.gpu_vram_used_mb is not None else None,
+            stats.cpu_temp_c,
+            stats.gpu_temp_c,
+        )
 
     def _theme_watchdog(self) -> None:
         try:
@@ -1739,6 +1763,44 @@ class ESLDeskWidget:
     def _on_timer(self) -> None:
         self.trigger_refresh(force_weather=False)
         self._schedule_next_refresh()
+
+    def _schedule_sys_refresh(self) -> None:
+        interval_ms = max(1000, int(round(float(self.cfg.get("sys_refresh_seconds", 2.0)) * 1000)))
+        self.root.after(interval_ms, self._on_sys_timer)
+
+    def _on_sys_timer(self) -> None:
+        threading.Thread(target=self._sys_worker, daemon=True).start()
+        self._schedule_sys_refresh()
+
+    def _sys_worker(self) -> None:
+        if self._sys_cache is None or not self._sys_lock.acquire(blocking=False):
+            return
+        try:
+            stats = self.sys_monitor.read(sample_interval=None, include_cpu_temp=True)
+            sig = self._stats_sig(stats)
+            if sig == self._last_sys_sig:
+                return
+
+            def _patch_ui() -> None:
+                if self._sys_cache is None:
+                    return
+                self._last_stats = stats
+                self._last_sys_sig = sig
+                img, hits, screen = patch_widget_system_stats(
+                    self._sys_cache,
+                    stats,
+                    temp_unit=str(self.cfg.get("temp_unit", "C")),
+                    lang=self._lang(),
+                )
+                self._hit_map = hits
+                self.last_screen = screen
+                self._apply_image(img)
+
+            self.root.after(0, _patch_ui)
+        except Exception:
+            pass
+        finally:
+            self._sys_lock.release()
 
     def open_settings(self) -> None:
         is_en = self._lang() == "en"
