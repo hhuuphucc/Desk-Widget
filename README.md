@@ -44,9 +44,12 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
 ### Installation & Launch
 
 #### Option A: Standalone App (Download & Run — No Python Required)
-- Download the pre-built release from **GitHub Releases** (built automatically via [`.github/workflows/release.yml`](.github/workflows/release.yml) for `Windows x64 (.exe)`, `macOS Apple Silicon (.dmg)`, and `macOS Intel (.dmg)`):
-  - **Windows:** Double-click `desk-widget-windows-x64.exe` *(if SmartScreen appears on first run, click **More info → Run anyway**).*
-  - **macOS:** Open the `.dmg`, drag `desk-widget.app` to **Applications** *(on first run of an unsigned app, Right-click → **Open**).*
+- Download the pre-built release from [**GitHub Releases**](https://github.com/hhuuphucc/desk-widget/releases/latest) (built automatically via [`.github/workflows/release.yml`](.github/workflows/release.yml) for `Windows x64 (.exe)`, `macOS Apple Silicon (.dmg)`, and `macOS Intel (.dmg)`):
+  - **Windows:** Double-click `desk-widget-windows-x64.exe`.
+    - *First-run notice:* Since the app is not commercially code-signed yet, **Windows SmartScreen** may appear — click **More info → Run anyway**.
+  - **macOS:** Open the matching `.dmg` (`apple-silicon` for M1/M2/M3/M4, or `intel` for Intel Macs) and drag `desk-widget.app` to **Applications**.
+    - *First-run notice:* On an unsigned app, **Right-click → Open** *(on macOS Sonoma/Sequoia, if Gatekeeper still blocks it, go to **System Settings → Privacy & Security → Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/desk-widget.app`)*.
+    - *macOS status:* Built automatically via GitHub Actions and covered by mocked unit tests; GUI rendering on physical Mac hardware has not been verified hands-on yet—feel free to open an issue if anything looks off.
 - Or package it yourself on your machine:
   ```bash
   pip install -r requirements.txt pyinstaller
@@ -183,9 +186,12 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
 ### Hướng dẫn cài đặt & khởi chạy
 
 #### Cách 1: Chạy trực tiếp bản đóng gói sẵn (Không cần cài Python)
-- Tải file ứng dụng dựng sẵn tại mục **GitHub Releases** (tự động build qua [`.github/workflows/release.yml`](.github/workflows/release.yml) cho đủ cả **Windows `.exe`**, **macOS chip M `.dmg`** và **macOS Intel `.dmg`**):
-  - **Windows:** Nhấn đúp `desk-widget-windows-x64.exe` *(lần đầu nếu Windows SmartScreen hỏi, chọn **More info → Run anyway**).*
-  - **macOS:** Mở file `.dmg`, kéo `desk-widget.app` vào thư mục **Applications** *(lần đầu mở app chưa ký số, nhấn **Chuột phải → Open**).*
+- Tải file ứng dụng dựng sẵn tại trang [**GitHub Releases**](https://github.com/hhuuphucc/desk-widget/releases/latest) (tự động build qua [`.github/workflows/release.yml`](.github/workflows/release.yml) cho đủ cả **Windows `.exe`**, **macOS chip M `.dmg`** và **macOS Intel `.dmg`**):
+  - **Windows:** Nhấn đúp `desk-widget-windows-x64.exe`.
+    - *Lưu ý lần đầu mở:* Do ứng dụng chưa mua chứng chỉ ký số thương mại, **Windows SmartScreen** có thể hiện cảnh báo — bấm **More info → Run anyway** để chạy.
+  - **macOS:** Mở đúng file `.dmg` theo chip máy (`apple-silicon` cho chip M1/M2/M3/M4, hoặc `intel` cho máy Intel) và kéo `desk-widget.app` vào thư mục **Applications**.
+    - *Lưu ý lần đầu mở:* Với app chưa ký số, nhấn **Chuột phải → Open** *(trên macOS Sonoma/Sequoia nếu vẫn bị Gatekeeper chặn, vào **System Settings → Privacy & Security → Open Anyway**, hoặc chạy lệnh `xattr -dr com.apple.quarantine /Applications/desk-widget.app`)*.
+    - *Lưu ý tương thích macOS:* Bản macOS `.dmg` hiện được build tự động trên GitHub Actions và kiểm tra bằng unit test giả lập (chưa mở GUI trực tiếp trên máy Mac thật); nếu gặp lỗi hiển thị trên Mac, hãy tạo Issue để được hỗ trợ.
 - Hoặc tự đóng gói trên máy của bạn:
   ```bash
   pip install -r requirements.txt pyinstaller
