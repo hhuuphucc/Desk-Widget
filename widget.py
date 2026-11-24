@@ -414,6 +414,17 @@ def _apply_win32_icons(win: tk.Tk | tk.Toplevel, ico_path: str) -> None:
         pass
 
 
+def _build_maps_url(loc_text: str) -> str:
+    """Resolve event location text to a Google Maps URL (homepage when blank, or direct URL/search)."""
+    raw = (loc_text or "").strip()
+    if not raw:
+        return "https://www.google.com/maps"
+    low = raw.lower()
+    if low.startswith(("https://", "http://")):
+        return raw
+    return f"https://www.google.com/maps/search/?api=1&query={quote(raw)}"
+
+
 def _set_window_icon(win: tk.Tk | tk.Toplevel, ico_path: str) -> None:
     """Apply window icon cleanly on both Windows (.ico + AppUserModelID) and macOS/Linux (iconphoto)."""
     if not ico_path or not os.path.exists(ico_path):
@@ -3177,7 +3188,7 @@ class ESLDeskWidget:
         _, ent_loc = make_rounded_entry(
             loc_row,
             var_loc,
-            width_px=345,
+            width_px=316,
             height=36,
             radius=8,
             fill=p.field,
@@ -3192,11 +3203,7 @@ class ESLDeskWidget:
         make_pill_button(
             loc_row,
             "Maps",
-            lambda: webbrowser.open(
-                f"https://www.google.com/maps/search/?api=1&query={quote(read_entry_clean(ent_loc, var_loc))}"
-            )
-            if read_entry_clean(ent_loc, var_loc)
-            else None,
+            lambda: webbrowser.open(_build_maps_url(read_entry_clean(ent_loc, var_loc))),
             bg=p.tonal_bg,
             fg=p.tonal_fg,
             hover_bg=p.tonal_hover,
@@ -3206,6 +3213,21 @@ class ESLDeskWidget:
             radius=8,
             font=("Segoe UI", 9, "bold"),
         ).pack(side="left")
+        make_info_button(
+            loc_row,
+            title="Event Location & Maps" if is_en else "Vị trí & Google Maps",
+            message=(
+                "• Leave empty & click 'Maps': opens Google Maps so you can look up a place and copy its address or link back here.\n\n"
+                "• Type an address/place or paste a Google Maps link: click 'Maps' to preview it directly."
+                if is_en
+                else "• Khi ô vị trí đang trống: bấm 'Maps' sẽ mở thẳng Google Maps để bạn tìm địa điểm rồi copy địa chỉ hoặc link dán lại vào đây.\n\n"
+                "• Khi đã nhập tên địa điểm, địa chỉ hoặc dán link Google Maps: bấm 'Maps' sẽ mở trực tiếp địa điểm đó."
+            ),
+            palette=p,
+            parent_bg=p.card,
+            size=22,
+            ok_text="Got it" if is_en else "Đã hiểu",
+        ).pack(side="left", padx=(6, 0))
 
         # Multi-notification rows + "+ Thêm thông báo"
         unit_pairs = (

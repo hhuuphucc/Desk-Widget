@@ -172,6 +172,12 @@ class TestESLWidget(unittest.TestCase):
         self.assertEqual(resolve_theme("light", style="xiaomi"), XIAOMI_LIGHT)
         self.assertEqual(resolve_theme("dark", style="xiaomi"), XIAOMI_DARK)
 
+        import widget as _w_maps
+        self.assertEqual(_w_maps._build_maps_url(""), "https://www.google.com/maps")
+        self.assertEqual(_w_maps._build_maps_url("   "), "https://www.google.com/maps")
+        self.assertEqual(_w_maps._build_maps_url("https://maps.app.goo.gl/demo"), "https://maps.app.goo.gl/demo")
+        self.assertIn("query=Ha%20Noi", _w_maps._build_maps_url("Ha Noi"))
+
         from unittest.mock import MagicMock, patch
         import renderer
         with patch.object(renderer.sys, "platform", "darwin"), patch(
