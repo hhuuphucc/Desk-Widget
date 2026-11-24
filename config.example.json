@@ -1,9 +1,17 @@
 {
   "owner_name": "My Workspace",
   "owner_align": "center",
+  "bg_mode": "default",
   "bg_image": "",
+  "bg_pos": "cover",
+  "bg_tone": "original",
+  "bg_zoom": 1.0,
+  "bg_offset_x": 0.0,
+  "bg_offset_y": 0.0,
+  "bg_opacity": 0.55,
   "logo_mode": "widget_bg",
   "logo_path": "",
+  "logo_pos": "before_title",
   "calendars": [
     {
       "name": "Cá nhân",

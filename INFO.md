@@ -23,11 +23,11 @@ When **`Auto-detect location & calendar timezone via IP`** is enabled in **Setti
 ### 2. Pinning Any City, Province, or State Manually
 
 1. Open **Settings** (double-click any empty area on the widget or **Right-click → `Settings...`**).
-2. **Uncheck** `Auto-detect location & calendar timezone via IP` — this unlocks `City`, `Find coords`, `Lat/Lon`, and `Timezone` (those 5 controls stay greyed out while Auto-IP is enabled).
-3. Enter a place name and click **`Find coords`** (uses Open-Meteo's global Geocoding API).
+2. **Uncheck** `Auto-detect location & timezone via IP` — this unlocks `City`, `Find coordinates`, `Lat/Lon`, and the scrollable **34-zone `Timezone`** dropdown.
+3. Enter a place name and press **`Enter`** or click **`Find coordinates`** (uses Open-Meteo's global Geocoding API).
 - **Important tips:**
-  - `Find coords` picks the **first popular match** (`count=1`). Ambiguous or accented local names may match a different town; use clear international spelling (e.g., `San Jose`, `Tokyo`, `Da Lat`, `New York`) or type exact **`Lat/Lon`** numbers manually.
-  - Clicking `Find coords` fills **only `Lat/Lon`**. If the target city is in a different timezone and you want the widget clock and calendar events to follow it, update the **`Timezone`** field manually using a standard IANA ID (`Asia/Ho_Chi_Minh`, `Asia/Tokyo`, `America/New_York`, `Europe/London`, etc.).
+  - `Find coordinates` picks the **first popular match** (`count=1`) and automatically fills **`City`**, **`Lat/Lon`**, and **`Timezone`** together. Ambiguous or accented local names may match a different town; use clear international spelling (e.g., `San Jose`, `Tokyo`, `Da Lat`, `New York`) or type exact **`Lat/Lon`** numbers manually.
+  - You can also adjust the **`Timezone`** dropdown independently using the scrollable list of **34 world zones (`UTC-11:00` → `UTC+14:00`)**.
 
 ### 3. Weather & `°C` / `°F` Notes
 
@@ -45,24 +45,24 @@ When **`Auto-detect location & calendar timezone via IP`** is enabled in **Setti
 
 ### 5. Real-Time System Monitor (`RAM / CPU / GPU & Temperature`)
 
-- **Very light background footprint:** Updating every `2 seconds` repaints only the `SYSTEM` quadrant (`patch_widget_system_stats`), using roughly **`~0.1%–0.2%` steady CPU**.
-- **Brief CPU burst inside the `CPU` popup:** Clicking `CPU` runs `top_cpu_processes`, which snapshots all running OS processes twice over `0.8s`. Seeing `[Widget]` briefly around `~10–15%` inside that popup is normal one-off scanning overhead, not steady background usage.
+- **Very light background footprint:** Updating every `2 seconds` repaints only the `SYSTEM` quadrant (`patch_widget_system_stats`), using roughly **`~0.1%–0.2%` steady CPU** and `0%` GPU.
+- **Accurate `CPU` popup ranking:** Clicking `CPU` runs `top_cpu_processes` over a `1.5s` window and subtracts the profiler's own `psutil` scan overhead from `[Widget]`, so `[Widget]` reports its true idle CPU (`< 0.1%`) rather than spiking from the scan itself.
 - **Windows `svchost.exe (N)` & `MemCompression`:** Detail popups group processes by executable name. `svchost.exe (N)` is normal Windows service host processes (`N` instances grouped), and `MemCompression` is Windows compressing standby memory pages in RAM instead of swapping to disk — neither is a widget bug.
 - **GPU & Temperature differences by hardware:**
   - **Windows + NVIDIA GPU:** Reads GPU %, VRAM `GB`, and GPU temp directly via `nvml.dll` (zero background console spawn; `nvidia-smi` fallback).
   - **Windows Intel/AMD iGPU only (no NVIDIA):** GPU `%` and VRAM may remain at `0%` / `0.0/0.0G` because NVML is NVIDIA-specific, while RAM, CPU, and CPU/thermal zone temp still update normally.
   - **macOS (Apple Silicon M1–M4 & Intel):** Reads GPU utilization via throttled `ioreg IOAccelerator` (unified Apple Silicon memory does not report separate VRAM capacity in GB). CPU temperature relies on `IOHWSensor` (mostly Intel) unless you install a rootless sensor CLI such as `brew install smctemp` or `brew install osx-cpu-temp`.
 
-### 6. Interactions, Single-Instance, Export & Layout Quirks
+### 6. Interactions, Single-Instance, Settings & Layout Notes
 
 - **Single-instance safety:** Opening the app a second time automatically closes the previous `widget.pid` instance so you never get duplicate overlapping widgets.
 - **Z-order (`Always on top` vs `Send behind`):** On Windows, fullscreen apps (games, fullscreen video, slides) keep focus naturally and `Send behind` pushes the widget cleanly to desktop level; macOS toggles `-topmost` / `lower()` cleanly.
-- **E-Ink 3-Color ESL Export (`296×128 PNG/BMP`):** Converts the current widget canvas into a 3-color Black/White/Red bitmap sized for `2.9"` (`296×128`) electronic shelf labels (sharpest when using **Minimal Sans** style).
-- **macOS right-click:** Supports two-finger tap (`Button-2`), `Control + Click`, and standard right-click (`Button-3`).
+- **5-Tab Settings & Custom Wallpaper Protection:** Switching between the **6 visual styles** or **Light/Dark** modes updates both the widget and the Settings window immediately in-place without flickering/reopening. Custom backgrounds support live drag/zoom framing, **Original / Negative** tone, and **Background Strength (`15%–100%`, default `55%`)** with an automatic translucent readability scrim behind text regions.
+- **macOS right-click & scrolling:** Supports two-finger tap (`Button-2`), `Control + Click`, and standard right-click (`Button-3`), plus normalized cross-platform mousewheel scrolling (`mousewheel_units`) in long lists.
 
 ### 7. Storage, Updates, First-Run Warnings & License
 
-- **No Login Required:** All features (Calendars, Weather, Styles, Themes, Custom Backgrounds, ESL Export, Updates) work immediately out of the box without any account or login gate.
+- **No Login Required:** All features (Calendars, Weather, 6 Styles, Themes, Custom Backgrounds, Circular Logos, Updates) work immediately out of the box without any account or login gate.
 - **Where personal data is stored:** Your `config.json`, custom backgrounds/icons, and `widget.pid` are stored locally on your machine outside the app binary in `%APPDATA%\desk-widget` (Windows) or `~/Library/Application Support/desk-widget` (macOS).
 - **First-run OS warnings & Updates:**
   - **Windows SmartScreen:** Click **More info → Run anyway** on unsigned `.exe`. If Desktop shortcut icons look cached after `App Icon...`, press **`F5`** on the Desktop.
@@ -93,11 +93,11 @@ Khi ô **`Tự động cập nhật vị trí & múi giờ lịch theo mạng IP
 ### 2. Khi muốn cố định bất kỳ thành phố / tỉnh / bang nào trên thế giới
 
 1. Mở **Cài đặt** (nhấn đúp vào khoảng trống trên widget hoặc **Chuột phải → `Cài đặt...`**).
-2. **Bỏ tích** `Tự động cập nhật vị trí & múi giờ lịch theo mạng IP` — toàn bộ 5 mục (`Thành phố`, nút `Tìm tọa độ`, `Lat`, `Lon`, `Múi giờ`) sẽ mở khóa hết màu xám để bạn nhập tay.
-3. Gõ tên thành phố/bang rồi bấm **`Tìm tọa độ`** (tìm trên dữ liệu toàn cầu của Open-Meteo).
+2. **Bỏ tích** `Tự động lấy vị trí & múi giờ theo IP (bỏ chọn để tự sửa)` — toàn bộ mục (`Thành phố`, nút `Tìm tọa độ`, `Vĩ độ`, `Kinh độ`, và menu cuộn `Múi giờ`) sẽ mở khóa để bạn nhập hoặc chọn.
+3. Gõ tên thành phố/bang rồi nhấn **`Enter`** hoặc bấm **`Tìm tọa độ`** (tìm trên dữ liệu toàn cầu của Open-Meteo).
 - **Lưu ý nhỏ để dùng chuẩn:**
-  - Nếu nơi đó có tên trùng ở nhiều quốc gia (hoặc tên tiếng Việt ít phổ biến), hàm tìm hiện lấy **kết quả phổ biến đầu tiên (`count=1`)**, nên gõ tên quốc tế rõ ràng (ví dụ `San Jose`, `Tokyo`, `Da Lat`, `New York`) hoặc tự điền thẳng cặp số **`Lat/Lon`** sẽ chuẩn nhất.
-  - Khi nhập tay thành phố khác múi giờ, nút **`Tìm tọa độ`** chỉ tự điền **`Lat/Lon`**. Nếu muốn đồng hồ & lịch trên widget chạy theo múi giờ của nơi đó, bạn nhập thêm vào ô **`Múi giờ`** (chuẩn IANA, ví dụ `Asia/Ho_Chi_Minh`, `Asia/Tokyo`, `America/New_York`, `Europe/London`).
+  - Nút **`Tìm tọa độ`** tự điền đồng bộ cả **`Thành phố`**, **`Vĩ độ`**, **`Kinh độ`** và tự chọn đúng **`Múi giờ`** tương ứng (ưu tiên kết quả phổ biến đầu tiên `count=1`; nên gõ tên quốc tế rõ ràng như `San Jose`, `Tokyo`, `Da Lat`, `New York` hoặc nhập tay cặp `Vĩ độ / Kinh độ` nếu cần).
+  - Bạn cũng có thể tự cuộn chọn trong danh sách **34 múi giờ chuẩn trên thế giới (`UTC-11:00` → `UTC+14:00`)** ở ô **`Múi giờ`**.
 
 ### 3. Thời tiết & Đổi đơn vị `°C` / `°F`
 
@@ -115,24 +115,24 @@ Khi ô **`Tự động cập nhật vị trí & múi giờ lịch theo mạng IP
 
 ### 5. Giám sát hệ thống Real-time (`RAM / CPU / GPU & Nhiệt độ`)
 
-- **Chạy nền rất nhẹ:** Cập nhật mỗi `2 giây` chỉ vẽ lại đúng vùng `HỆ THỐNG` (`patch_widget_system_stats`), mức ăn CPU lúc chạy bình thường chỉ khoảng **`~0.1%–0.2%`**.
-- **Vì sao bấm popup `CPU` thấy `[Widget]` lên ~10–15%?** Khi bấm thanh `CPU`, app chụp toàn bộ tiến trình đang chạy 2 lần trong `0.8s` để xếp hạng — con số đó chỉ là đỉnh ngắn đúng lúc mở popup, không phải mức ăn nền bình thường.
+- **Chạy nền rất nhẹ:** Cập nhật mỗi `2 giây` chỉ vẽ lại đúng vùng `HỆ THỐNG` (`patch_widget_system_stats`), mức ăn CPU lúc chạy nền chỉ khoảng **`~0.1%–0.2%`** và GPU `0%`.
+- **Số liệu bảng chi tiết `CPU` chính xác:** Khi bấm thanh `CPU`, hàm `top_cpu_processes` đo trong `1.5s` và tự trừ đi chi phí quét `psutil` của chính widget, nên không còn hiện tượng `[Widget]` tự vọt lên ~10–15% khi mở popup.
 - **`svchost.exe (N)` và `MemCompression` trên Windows là gì?** Bảng chi tiết gom nhóm các tiến trình trùng tên: `svchost.exe (N)` là nhóm dịch vụ nền chuẩn của Windows (`N` tiến trình), còn `MemCompression` là cơ chế nén RAM của Windows 10/11 giúp giảm ghi đĩa — cả hai đều bình thường, không phải lỗi rò rỉ từ widget.
 - **Khác biệt phần cứng GPU & Nhiệt độ:**
   - **Windows dùng card NVIDIA:** Đọc trực tiếp qua `nvml.dll` (không nháy cửa sổ phụ; dự phòng `nvidia-smi`), hiện đủ `% GPU`, `VRAM GB` và nhiệt độ GPU cạnh nhiệt độ CPU.
   - **Windows chỉ dùng card tích hợp Intel / AMD (không có NVIDIA):** GPU `%` và VRAM sẽ giữ `0%` / `0.0/0.0G` (do NVML chỉ hỗ trợ NVIDIA), còn RAM, CPU và nhiệt độ hệ thống vẫn chạy bình thường.
   - **macOS (Apple Silicon M1–M4 & Intel):** Đọc GPU qua `ioreg IOAccelerator` có giới hạn nhịp đọc nhẹ (chip Apple Silicon dùng Unified Memory nên không tách riêng dung lượng VRAM kiểu `GB`). Nhiệt độ CPU cần cài thêm công cụ không `sudo` như `brew install smctemp` hoặc `brew install osx-cpu-temp` nếu `IOHWSensor` bị hệ điều hành ẩn.
 
-### 6. Thao tác cửa sổ, Chống trùng & Xuất ảnh ESL
+### 6. Thao tác cửa sổ, Chống trùng & Cá nhân hóa
 
 - **Chế độ đơn tiến trình (`widget.pid`):** Mở lại widget lần nữa sẽ tự đóng tiến trình cũ đang chạy để tránh 2 widget đè lên nhau.
 - **Nổi / Ẩn cửa sổ (`Luôn nổi trên cùng` / `Ẩn ra sau ngay`):** Trên Windows, khi mở app toàn màn hình (xem phim, chơi game, trình chiếu) hoặc bấm `Ẩn ra sau ngay`, widget sẽ lùi gọn xuống nền Desktop; trên macOS app bật/tắt `-topmost` và `lower()` theo quy tắc cửa sổ Cocoa.
-- **Xuất ảnh E-Ink 3 màu (`296×128 PNG/BMP`):** Chuyển card hiện tại thành ảnh 3 màu Đen/Trắng/Đỏ đúng chuẩn màn hình ESL `2.9"` (`296×128`) — hiển thị sắc nét nhất khi dùng phong cách **Minimal Sans**.
-- **Chuột phải trên macOS:** Hỗ trợ chạm 2 ngón (`Button-2`), `Control + Click` và chuột phải thường (`Button-3`).
+- **Cài đặt 5 tab & Ảnh nền cá nhân:** Bấm chọn trong **6 phong cách** hoặc **Sáng/Tối** sẽ đổi màu đồng bộ ngay cả widget lẫn cửa sổ Cài đặt tại chỗ (không nháy tắt/mở). Hộp thoại chỉnh nền hỗ trợ kéo/thu phóng, **Ảnh gốc / Âm bản**, và **Độ rõ nền (`15%–100%`)** kèm lớp mờ giữ chữ dễ đọc.
+- **Chuột phải & cuộn trên macOS:** Hỗ trợ chạm 2 ngón (`Button-2`), `Control + Click`, chuột phải (`Button-3`) và cuộn danh sách mượt trên cả Windows lẫn macOS.
 
 ### 7. Lưu trữ, Bản quyền, Cảnh báo hệ điều hành & Cập nhật
 
-- **Không cần đăng nhập:** Toàn bộ tính năng (thêm lịch `.ics`, thời tiết, giao diện, đổi nền/logo/icon, xuất ảnh ESL, cập nhật) mở sẵn cho mọi người tải về dùng và tùy biến ngay lập tức.
+- **Không cần đăng nhập:** Toàn bộ tính năng (thêm lịch `.ics`, thời tiết, 6 giao diện, đổi nền/logo/icon, cập nhật) mở sẵn cho mọi người tải về dùng và tùy biến ngay lập tức.
 - **Nơi lưu dữ liệu cá nhân:** Cấu hình (`config.json`), ảnh nền/icon tùy chỉnh và `widget.pid` lưu hoàn toàn trên máy bạn (tách biệt ngoài file chạy) tại `%APPDATA%\desk-widget` (Windows) hoặc `~/Library/Application Support/desk-widget` (macOS).
 - **Cảnh báo lần đầu, Tự khởi động & Kiểm tra cập nhật:**
   - **Windows SmartScreen:** Bấm **More info → Run anyway** ở lần mở `.exe` đầu tiên. Sau khi đổi icon app (`Đổi icon app...`), nếu icon ngoài Desktop chưa đổi ngay thì nhấn **`F5`** ngoài Desktop.

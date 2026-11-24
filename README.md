@@ -3,10 +3,10 @@
 **English** · [Tiếng Việt](#tiếng-việt) · [Important Notes (`INFO.md`)](INFO.md) · *"A small, open-source passion project built for fun and non-commercial use."*
 
 > ### Download & Run — No Git or Python Required / Tải về chạy ngay (Không cần Git hay Python)
-> - **All Releases:** [**GitHub Releases (Latest)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
-> - **Windows 10/11 (`.exe`):** [**Download `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(First run SmartScreen: **More info → Run anyway**)*
-> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Download `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(First run: drag to Applications, **Right-click → Open**)*
-> - **macOS Intel (`.dmg`):** [**Download `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+> - **All Releases:** [**GitHub Releases (Latest)**](https://github.com/hhuuphucc/Desk-Widget/releases/latest)
+> - **Windows 10/11 (`.exe`):** [**Download `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-windows-x64.exe) *(First run SmartScreen: **More info → Run anyway**)*
+> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Download `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+> - **macOS Intel (`.dmg`):** [**Download `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-intel.dmg) *(First run: drag to Applications, **Right-click → Open**)*
 > - **Notes & Troubleshooting:** Read [**`INFO.md`**](INFO.md) for IP geolocation/VPN exceptions, manual `City` / `Lat/Lon` / `Timezone` tips, real-time CPU popup details, and Windows/macOS first-launch notes.
 
 ---
@@ -58,7 +58,7 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
 ### Installation & Launch
 
 #### Option A: Standalone App (Download & Run — No Python Required)
-- Download the pre-built release from [**GitHub Releases**](https://github.com/hhuuphucc/desk-widget/releases/latest) (built automatically via [`.github/workflows/release.yml`](.github/workflows/release.yml) for `Windows x64 (.exe)`, `macOS Apple Silicon (.dmg)`, and `macOS Intel (.dmg)`):
+- Download the pre-built release from [**GitHub Releases**](https://github.com/hhuuphucc/Desk-Widget/releases/latest) (built automatically via [`.github/workflows/release.yml`](.github/workflows/release.yml) for `Windows x64 (.exe)`, `macOS Apple Silicon (.dmg)`, and `macOS Intel (.dmg)`):
   - **Windows:** Double-click `desk-widget-windows-x64.exe`.
     - *First-run notice:* Since the app is not commercially code-signed yet, **Windows SmartScreen** may appear — click **More info → Run anyway**.
   - **macOS:** Open the matching `.dmg` (`apple-silicon` for M1/M2/M3/M4, or `intel` for Intel Macs) and drag `desk-widget.app` to **Applications**.
@@ -73,7 +73,7 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
 
 #### Option B: Run from Source (Windows)
 ```powershell
-git clone https://github.com/hhuuphucc/desk-widget.git desk-widget
+git clone https://github.com/hhuuphucc/Desk-Widget.git desk-widget
 cd desk-widget
 pip install -r requirements.txt
 copy config.example.json config.json
@@ -83,7 +83,7 @@ copy config.example.json config.json
 
 #### On macOS (Apple Silicon & Intel)
 ```bash
-git clone https://github.com/hhuuphucc/desk-widget.git desk-widget
+git clone https://github.com/hhuuphucc/Desk-Widget.git desk-widget
 cd desk-widget
 python3 -m venv .venv
 source .venv/bin/activate
@@ -187,10 +187,10 @@ python test_widget.py -v
 [English](#english) · **Tiếng Việt** · [Lưu ý & Hướng dẫn chi tiết (`INFO.md`)](INFO.md#tiếng-việt)
 
 > **Tải về chạy ngay (Không cần cài Git hay Python):**
-> - **Trang phát hành:** [**GitHub Releases (Bản mới nhất)**](https://github.com/hhuuphucc/desk-widget/releases/latest)
-> - **Windows 10/11 (`.exe`):** [**Tải `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-windows-x64.exe) *(Lần đầu nếu SmartScreen hỏi: **More info → Run anyway**)*
-> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Tải `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
-> - **macOS Intel (`.dmg`):** [**Tải `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/desk-widget/releases/latest/download/desk-widget-macos-intel.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
+> - **Trang phát hành:** [**GitHub Releases (Bản mới nhất)**](https://github.com/hhuuphucc/Desk-Widget/releases/latest)
+> - **Windows 10/11 (`.exe`):** [**Tải `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-windows-x64.exe) *(Lần đầu nếu SmartScreen hỏi: **More info → Run anyway**)*
+> - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Tải `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
+> - **macOS Intel (`.dmg`):** [**Tải `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-intel.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
 > - **Lưu ý quan trọng khi dùng:** Xem file [**`INFO.md`**](INFO.md#tiếng-việt) để biết chi tiết về định vị IP / VPN, tự nhập `Thành phố` / `Lat/Lon` / `Múi giờ`, giải thích chỉ số CPU khi bấm xem chi tiết và lưu ý Windows/macOS.
 
 Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Apple Silicon M1/M2/M3/M4 & Intel)** (`Tkinter` + `Pillow`), hỗ trợ **6 phong cách giao diện Light/Dark đồng bộ** (`macOS`, `Pixel`, `Xiaomi HyperOS`, `Ocean Calm / Mist Blue`, `Paper Serif`, `Sans`). Tự động làm mới mỗi **60 giây** ở luồng nền, tự đồng bộ múi giờ theo IP và hỗ trợ **Tiếng Việt / English** cùng **`°C` / `°F`**.
@@ -233,7 +233,7 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
 ### Hướng dẫn cài đặt & khởi chạy
 
 #### Cách 1: Chạy trực tiếp bản đóng gói sẵn (Không cần cài Python)
-- Tải file ứng dụng dựng sẵn tại trang [**GitHub Releases**](https://github.com/hhuuphucc/desk-widget/releases/latest) (tự động build qua [`.github/workflows/release.yml`](.github/workflows/release.yml) cho đủ cả **Windows `.exe`**, **macOS chip M `.dmg`** và **macOS Intel `.dmg`**):
+- Tải file ứng dụng dựng sẵn tại trang [**GitHub Releases**](https://github.com/hhuuphucc/Desk-Widget/releases/latest) (tự động build qua [`.github/workflows/release.yml`](.github/workflows/release.yml) cho đủ cả **Windows `.exe`**, **macOS chip M `.dmg`** và **macOS Intel `.dmg`**):
   - **Windows:** Nhấn đúp `desk-widget-windows-x64.exe`.
     - *Lưu ý lần đầu mở:* Do ứng dụng chưa mua chứng chỉ ký số thương mại, **Windows SmartScreen** có thể hiện cảnh báo — bấm **More info → Run anyway** để chạy.
   - **macOS:** Mở đúng file `.dmg` theo chip máy (`apple-silicon` cho chip M1/M2/M3/M4, hoặc `intel` cho máy Intel) và kéo `desk-widget.app` vào thư mục **Applications**.
@@ -248,7 +248,7 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
 
 #### Cách 2: Chạy từ mã nguồn trên Windows
 ```powershell
-git clone https://github.com/hhuuphucc/desk-widget.git desk-widget
+git clone https://github.com/hhuuphucc/Desk-Widget.git desk-widget
 cd desk-widget
 pip install -r requirements.txt
 copy config.example.json config.json
@@ -258,7 +258,7 @@ copy config.example.json config.json
 
 #### Trên macOS (Apple Silicon M-series & Intel)
 ```bash
-git clone https://github.com/hhuuphucc/desk-widget.git desk-widget
+git clone https://github.com/hhuuphucc/Desk-Widget.git desk-widget
 cd desk-widget
 python3 -m venv .venv
 source .venv/bin/activate
