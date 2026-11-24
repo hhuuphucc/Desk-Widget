@@ -1,20 +1,57 @@
 ========================================================================
-desk-widget — Complete Uninstall Commands (Windows & macOS)
-Gỡ bỏ hoàn toàn ứng dụng & file đã tải về (Windows & macOS)
+desk-widget — Complete Uninstall Guide
 ========================================================================
+[1] ENGLISH (below)  |  [2] TIẾNG VIỆT (scroll down)
 
-Note: desk-widget does NOT touch the Windows Registry or install system
-services. All commands below remove the downloaded app, auto-start
-entries, shortcuts, and local settings/cache cleanly.
 
+========================================================================
+[1] ENGLISH — Complete Uninstall (Windows & macOS)
+========================================================================
+Note: desk-widget does NOT modify the Windows Registry or install
+background system services. The commands below stop the app and remove
+all downloaded files, auto-start entries, shortcuts, and local settings.
+
+--- 1A. WINDOWS — PowerShell (Recommended) ---
+Open PowerShell (Win + X -> Terminal / PowerShell), paste and press Enter:
+
+Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*widget.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget.lnk') -Force -ErrorAction SilentlyContinue
+Remove-Item "$env:APPDATA\desk-widget" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $HOME 'Downloads\desk-widget*.exe') -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget*.exe') -Force -ErrorAction SilentlyContinue
+Remove-Item '.\desk-widget*.exe' -Force -ErrorAction SilentlyContinue
+
+--- 1B. WINDOWS — Command Prompt (CMD) ---
+Open Command Prompt (cmd.exe), paste and press Enter:
+
+taskkill /F /IM desk-widget.exe >nul 2>&1
+del /F /Q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" >nul 2>&1
+del /F /Q "%USERPROFILE%\Desktop\desk-widget.lnk" >nul 2>&1
+rmdir /S /Q "%APPDATA%\desk-widget" >nul 2>&1
+del /F /Q "%USERPROFILE%\Downloads\desk-widget*.exe" >nul 2>&1
+del /F /Q "%USERPROFILE%\Desktop\desk-widget*.exe" >nul 2>&1
+
+--- 1C. macOS — Terminal (Apple Silicon & Intel) ---
+Open Terminal (Cmd + Space -> Terminal), paste and press Enter:
+
+pkill -f desk-widget || true
+pkill -f "widget.py" || true
+launchctl unload "$HOME/Library/LaunchAgents/com.deskwidget.app.plist" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/com.deskwidget.app.plist"
+rm -rf /Applications/desk-widget.app "$HOME/Applications/desk-widget.app" "$HOME/Library/Application Support/desk-widget"
+rm -f "$HOME/Downloads"/desk-widget*.dmg "$HOME/Desktop"/desk-widget*.dmg
+
+
+========================================================================
+[2] TIẾNG VIỆT — Gỡ bỏ hoàn toàn ứng dụng (Windows & macOS)
+========================================================================
 Lưu ý: desk-widget KHÔNG ghi vào Windows Registry và không cài dịch vụ
 nền hệ thống. Các lệnh dưới đây sẽ tắt app và xóa sạch file đã tải,
-tự khởi động cùng hệ điều hành và toàn bộ dữ liệu/cấu hình đã lưu.
+tự khởi động cùng hệ điều hành, shortcut và toàn bộ dữ liệu đã lưu.
 
-------------------------------------------------------------------------
-1. WINDOWS — PowerShell (Recommended / Khuyên dùng)
-------------------------------------------------------------------------
-Open PowerShell (Win + X -> Terminal / PowerShell), paste and press Enter:
+--- 2A. WINDOWS — PowerShell (Khuyên dùng) ---
 Mở PowerShell (Win + X -> Terminal / PowerShell), dán lệnh sau và nhấn Enter:
 
 Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -26,10 +63,7 @@ Remove-Item (Join-Path $HOME 'Downloads\desk-widget*.exe') -Force -ErrorAction S
 Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget*.exe') -Force -ErrorAction SilentlyContinue
 Remove-Item '.\desk-widget*.exe' -Force -ErrorAction SilentlyContinue
 
-------------------------------------------------------------------------
-2. WINDOWS — Command Prompt (CMD)
-------------------------------------------------------------------------
-Open Command Prompt (cmd.exe), paste and press Enter:
+--- 2B. WINDOWS — Command Prompt (CMD) ---
 Mở Command Prompt (cmd.exe), dán lệnh sau và nhấn Enter:
 
 taskkill /F /IM desk-widget.exe >nul 2>&1
@@ -39,10 +73,7 @@ rmdir /S /Q "%APPDATA%\desk-widget" >nul 2>&1
 del /F /Q "%USERPROFILE%\Downloads\desk-widget*.exe" >nul 2>&1
 del /F /Q "%USERPROFILE%\Desktop\desk-widget*.exe" >nul 2>&1
 
-------------------------------------------------------------------------
-3. macOS — Terminal (Apple Silicon & Intel)
-------------------------------------------------------------------------
-Open Terminal (Cmd + Space -> Terminal), paste and press Enter:
+--- 2C. macOS — Terminal (Apple Silicon & Intel) ---
 Mở Terminal (Cmd + Space -> Terminal), dán lệnh sau và nhấn Enter:
 
 pkill -f desk-widget || true
