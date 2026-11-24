@@ -128,6 +128,10 @@ class TestESLWidget(unittest.TestCase):
         self.assertEqual(extract_meeting_links(ev_discord), [("Mở Discord", "https://discord.com/channels/123/456")])
         multi_labels = [lbl for lbl, _ in extract_meeting_links(ev_multi, include_maps_for_address=True)]
         self.assertEqual(multi_labels, ["Mở Meet", "Mở Slides", "Mở Figma", "Mở Zalo", "Mở GitHub", "Mở Maps"])
+        import renderer as _r_sun
+
+        _prev_sun = _r_sun.get_sun_location()
+        _r_sun.set_sun_location(None, None)  # no location yet -> 06:00-18:00 fallback
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 5, 59), style="sans"), MINIMAL_SANS_DARK)
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 6, 0), style="sans"), MINIMAL_SANS_LIGHT)
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 17, 59), style="sans"), MINIMAL_SANS_LIGHT)
@@ -136,6 +140,28 @@ class TestESLWidget(unittest.TestCase):
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 10, 0), style="serif"), PAPER_SERIF_LIGHT)
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 18, 0), style="botanical"), BOTANICAL_DARK)
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 10, 0), style="botanical"), BOTANICAL_LIGHT)
+
+        # 'auto' follows real sunrise/sunset at the installed location & timezone
+        tz_vn = timezone(timedelta(hours=7))
+        hn = (21.0285, 105.8542)
+        rise, sset = _r_sun.sun_times(date(2026, 11, 24), hn[0], hn[1], tz_vn)
+        self.assertEqual((rise.hour, sset.hour), (6, 17))
+        self.assertTrue(abs((rise.hour * 60 + rise.minute) - (6 * 60 + 13)) <= 3)
+        self.assertTrue(abs((sset.hour * 60 + sset.minute) - (17 * 60 + 15)) <= 3)
+        self.assertTrue(_r_sun.auto_is_dark(datetime(2026, 11, 24, 6, 0, tzinfo=tz_vn), *hn))
+        self.assertFalse(_r_sun.auto_is_dark(datetime(2026, 11, 24, 6, 30, tzinfo=tz_vn), *hn))
+        self.assertFalse(_r_sun.auto_is_dark(datetime(2026, 11, 24, 17, 0, tzinfo=tz_vn), *hn))
+        self.assertTrue(_r_sun.auto_is_dark(datetime(2026, 11, 24, 17, 40, tzinfo=tz_vn), *hn))
+        # Summer days are longer: 18:20 is still light in June
+        self.assertFalse(_r_sun.auto_is_dark(datetime(2026, 6, 21, 18, 20, tzinfo=tz_vn), *hn))
+        # Same instant, other side of the world (New York, UTC-5) -> night there
+        self.assertTrue(_r_sun.auto_is_dark(datetime(2026, 11, 24, 12, 0, tzinfo=tz_vn), 40.71, -74.0))
+        # Polar night: sun never rises
+        self.assertEqual(_r_sun.sun_times(date(2026, 12, 21), 69.65, 18.96, timezone(timedelta(hours=1))), (None, None))
+        _r_sun.set_sun_location(*hn)
+        self.assertEqual(resolve_theme("auto", datetime(2026, 11, 24, 17, 40, tzinfo=tz_vn), style="botanical"), BOTANICAL_DARK)
+        self.assertEqual(resolve_theme("auto", datetime(2026, 11, 24, 17, 0, tzinfo=tz_vn), style="botanical"), BOTANICAL_LIGHT)
+        _r_sun.set_sun_location(*_prev_sun) if _prev_sun else _r_sun.set_sun_location(None, None)
         self.assertEqual(resolve_theme("system", style="botanical", system_is_dark=True), BOTANICAL_DARK)
         self.assertEqual(resolve_theme("system", style="botanical", system_is_dark=False), BOTANICAL_LIGHT)
         self.assertNotEqual(BOTANICAL_LIGHT.accent, PAPER_SERIF_LIGHT.accent)

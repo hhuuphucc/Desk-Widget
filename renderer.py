@@ -5,7 +5,7 @@ from __future__ import annotations
 import calendar as pycal
 import ctypes
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 import math
 import os
 import random
@@ -820,11 +820,118 @@ def is_system_dark_mode() -> bool:
     return False
 
 
+_SUN_LOCATION: tuple[float, float] | None = None
+# Sun centre this many degrees below the horizon = official sunrise/sunset (refraction + solar radius)
+SUN_HORIZON_DEG = -0.833
+
+
+def set_sun_location(latitude: float | None, longitude: float | None) -> None:
+    """Remember the installed location so 'auto' theme follows local sunrise/sunset."""
+    global _SUN_LOCATION
+    try:
+        lat = float(latitude)  # type: ignore[arg-type]
+        lon = float(longitude)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        _SUN_LOCATION = None
+        return
+    if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+        _SUN_LOCATION = (lat, lon)
+    else:
+        _SUN_LOCATION = None
+
+
+def get_sun_location() -> tuple[float, float] | None:
+    return _SUN_LOCATION
+
+
+def _as_utc(when: datetime) -> datetime:
+    if when.tzinfo is None:
+        when = when.astimezone()  # naive -> treat as this computer's local time
+    return when.astimezone(timezone.utc)
+
+
+def solar_elevation_deg(when: datetime, latitude: float, longitude: float) -> float:
+    """Solar elevation angle (degrees) at an instant for a location (NOAA solar position algorithm)."""
+    t = _as_utc(when)
+    jd = t.timestamp() / 86400.0 + 2440587.5
+    jc = (jd - 2451545.0) / 36525.0
+    l0 = (280.46646 + jc * (36000.76983 + jc * 0.0003032)) % 360.0
+    m = 357.52911 + jc * (35999.05029 - 0.0001537 * jc)
+    e = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
+    mr = math.radians(m)
+    c = (
+        math.sin(mr) * (1.914602 - jc * (0.004817 + 0.000014 * jc))
+        + math.sin(2 * mr) * (0.019993 - 0.000101 * jc)
+        + math.sin(3 * mr) * 0.000289
+    )
+    omega = math.radians(125.04 - 1934.136 * jc)
+    app_long = math.radians(l0 + c - 0.00569 - 0.00478 * math.sin(omega))
+    eps0 = 23.0 + (26.0 + (21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813))) / 60.0) / 60.0
+    eps = math.radians(eps0 + 0.00256 * math.cos(omega))
+    decl = math.asin(math.sin(eps) * math.sin(app_long))
+    y = math.tan(eps / 2.0) ** 2
+    l0r = math.radians(l0)
+    eq_time = 4.0 * math.degrees(
+        y * math.sin(2 * l0r)
+        - 2 * e * math.sin(mr)
+        + 4 * e * y * math.sin(mr) * math.cos(2 * l0r)
+        - 0.5 * y * y * math.sin(4 * l0r)
+        - 1.25 * e * e * math.sin(2 * mr)
+    )
+    minutes_utc = t.hour * 60.0 + t.minute + t.second / 60.0
+    true_solar = (minutes_utc + eq_time + 4.0 * longitude) % 1440.0
+    hour_angle = math.radians(true_solar / 4.0 - 180.0)
+    lat_r = math.radians(latitude)
+    cos_zen = math.sin(lat_r) * math.sin(decl) + math.cos(lat_r) * math.cos(decl) * math.cos(hour_angle)
+    zenith = math.degrees(math.acos(max(-1.0, min(1.0, cos_zen))))
+    return 90.0 - zenith
+
+
+def is_sun_up(when: datetime, latitude: float, longitude: float) -> bool:
+    return solar_elevation_deg(when, latitude, longitude) > SUN_HORIZON_DEG
+
+
+def sun_times(day: date, latitude: float, longitude: float, tzinfo) -> tuple[datetime | None, datetime | None]:
+    """Local (sunrise, sunset) for a calendar day in tzinfo; None when the sun never rises/sets that day."""
+    start = datetime(day.year, day.month, day.day, tzinfo=tzinfo)
+    prev_up = is_sun_up(start, latitude, longitude)
+    rise = sset = None
+    for minute in range(1, 24 * 60 + 1):
+        cur = start + timedelta(minutes=minute)
+        up = is_sun_up(cur, latitude, longitude)
+        if up and not prev_up and rise is None:
+            rise = cur
+        elif prev_up and not up and sset is None:
+            sset = cur
+        prev_up = up
+    return rise, sset
+
+
+def auto_is_dark(
+    now: datetime | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> bool:
+    """'auto' theme: dark between local sunset and sunrise at the app location (06:00–18:00 fallback)."""
+    if now is None:
+        now = datetime.now().astimezone()
+    loc = (latitude, longitude) if (latitude is not None and longitude is not None) else _SUN_LOCATION
+    if loc is not None:
+        try:
+            return not is_sun_up(now, float(loc[0]), float(loc[1]))
+        except Exception:
+            pass
+    # Fallback when no location is known yet: light 06:00–17:59
+    return now.hour >= 18 or now.hour < 6
+
+
 def resolve_theme(
     theme_mode: str = "auto",
     now: datetime | None = None,
     style: str = "serif",
     system_is_dark: bool | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ) -> ThemePalette:
     mode = (theme_mode or "auto").strip().lower()
     st = (style or "serif").strip().lower()
@@ -835,10 +942,7 @@ def resolve_theme(
     elif mode in ("system", "os"):
         is_dark = is_system_dark_mode() if system_is_dark is None else bool(system_is_dark)
     else:
-        if now is None:
-            now = datetime.now()
-        # Light from 06:00 through 17:59 (6:00 AM - 5:59 PM), Dark from 18:00 through 05:59
-        is_dark = now.hour >= 18 or now.hour < 6
+        is_dark = auto_is_dark(now, latitude, longitude)
 
     if st in ("sans", "esl"):
         return MINIMAL_SANS_DARK if is_dark else MINIMAL_SANS_LIGHT
@@ -1004,8 +1108,9 @@ class Fonts:
             self.event_time = _load_font("Candarab.ttf", _pt(11))
             self.event_title = _load_font("Candara.ttf", _pt(11))
             self.cal_title = _load_font("palab.ttf", _pt(12))
-            self.cal_day = _load_font("Candara.ttf", _pt(10.5))
-            self.cal_day_bold = _load_font("Candarab.ttf", _pt(10.5))
+            # Palatino has lining (equal-height) digits; Candara's old-style digits jump up/down inside cells
+            self.cal_day = _load_font("pala.ttf", _pt(10.5))
+            self.cal_day_bold = _load_font("palab.ttf", _pt(10.5))
         elif style == "serif":
             # Classic Paper Serif: Palatino Linotype Bold cho tiêu đề + Segoe UI rõ nét cho nội dung & số
             self.header_date = _load_font("palab.ttf", _pt(14))
@@ -1043,6 +1148,25 @@ def _text_width(draw, text: str, font) -> int:
     s = float(getattr(draw, "scale", 1.0))
     box = draw.textbbox((0, 0), text, font=font)
     return int(math.ceil((box[2] - box[0]) / s))
+
+
+def _draw_text_centered(draw, box, text: str, font, fill, v_sample: str | None = None) -> None:
+    """Draw text optically centred inside box=(x1, y1, x2, y2) in logical px.
+
+    Horizontal centring uses the real ink extent of `text`; vertical centring uses the ink extent of
+    `v_sample` (default: the text itself) so a row of labels shares one baseline.
+    """
+    s = float(getattr(draw, "scale", 1.0)) or 1.0
+    raw = getattr(draw, "_d", draw)
+    hb = raw.textbbox((0, 0), text, font=font)
+    vb = raw.textbbox((0, 0), v_sample, font=font) if v_sample else hb
+    x1, y1, x2, y2 = box
+    tx = (x1 + x2) / 2.0 - (hb[0] + hb[2]) / (2.0 * s)
+    ty = (y1 + y2) / 2.0 - (vb[1] + vb[3]) / (2.0 * s)
+    # Snap to the device pixel grid so glyphs stay crisp
+    tx = round(tx * s) / s
+    ty = round(ty * s) / s
+    draw.text((tx, ty), text, font=font, fill=fill)
 
 
 def _truncate_text(draw: ImageDraw.ImageDraw, text: str, font, max_w: int) -> str:
@@ -1240,62 +1364,72 @@ def _draw_inline_month_grid(
     else:
         _draw_fineline_rule(draw, rx, top_y, rx + rw, top_y, th.divider_soft, th.accent, with_dots=_is_paper(th))
 
-    nav_y = top_y + 4
-    if is_modern:
-        draw.rounded_rectangle((rx, nav_y, rx + 18, nav_y + 15), radius=5, fill=th.btn_bg)
-        draw.text((rx + 5, nav_y - 1), "<", font=f.small_bold, fill=th.ink)
-        hits.append(HitRegion(rx, nav_y, rx + 18, nav_y + 15, "prev_month"))
+    wy = top_y + 20
+    col_w = rw // 7
+    grid_x = rx + (rw - col_w * 7) // 2
+    gx1 = grid_x + 1
+    gx2 = grid_x + col_w * 7 - 2
 
-        nx = rx + rw - 18
-        draw.rounded_rectangle((nx, nav_y, nx + 18, nav_y + 15), radius=5, fill=th.btn_bg)
-        draw.text((nx + 5, nav_y - 1), ">", font=f.small_bold, fill=th.ink)
-        hits.append(HitRegion(nx, nav_y, nx + 18, nav_y + 15, "next_month"))
+    nav_y = top_y + 4
+    nav_h = 15
+    btn_w = 18
+    if is_modern:
+        draw.rounded_rectangle((gx1, nav_y, gx1 + btn_w, nav_y + nav_h), radius=5, fill=th.btn_bg)
+        _draw_text_centered(draw, (gx1, nav_y, gx1 + btn_w, nav_y + nav_h), "<", f.small_bold, th.ink)
+        hits.append(HitRegion(gx1, nav_y, gx1 + btn_w, nav_y + nav_h, "prev_month"))
+
+        nx = gx2 - btn_w
+        draw.rounded_rectangle((nx, nav_y, gx2, nav_y + nav_h), radius=5, fill=th.btn_bg)
+        _draw_text_centered(draw, (nx, nav_y, gx2, nav_y + nav_h), ">", f.small_bold, th.ink)
+        hits.append(HitRegion(nx, nav_y, gx2, nav_y + nav_h, "next_month"))
 
         if view_year != today.year or view_month != today.month:
-            btn_lbl = "Today" if is_en else "H.nay"
-            tx = nx - 42
-            draw.rounded_rectangle((tx, nav_y, tx + 38, nav_y + 15), radius=6, fill=th.pill)
-            bw = _text_width(draw, btn_lbl, f.small_bold)
-            draw.text((tx + max(2, (38 - bw) // 2), nav_y), btn_lbl, font=f.small_bold, fill=th.accent)
-            hits.append(HitRegion(tx, nav_y, tx + 38, nav_y + 15, "goto_today"))
+            btn_lbl = "Today" if is_en else "Hôm nay"
+            btn_tw = _text_width(draw, btn_lbl, f.small_bold) + 10
+            tx = nx - btn_tw - 4
+            draw.rounded_rectangle((tx, nav_y, tx + btn_tw, nav_y + nav_h), radius=6, fill=th.pill, outline=th.accent, width=1)
+            _draw_text_centered(draw, (tx, nav_y, tx + btn_tw, nav_y + nav_h), btn_lbl, f.small_bold, th.accent)
+            hits.append(HitRegion(tx, nav_y, tx + btn_tw, nav_y + nav_h, "goto_today"))
             title_end_x = tx - 4
         else:
             title_end_x = nx - 4
     else:
-        draw.rectangle((rx, nav_y, rx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
-        draw.text((rx + 4, nav_y - 1), "<", font=f.small_bold, fill=th.ink)
-        hits.append(HitRegion(rx, nav_y, rx + 16, nav_y + 14, "prev_month"))
+        draw.rectangle((gx1, nav_y, gx1 + btn_w, nav_y + nav_h), fill=th.paper, outline=th.border_muted, width=1)
+        _draw_text_centered(draw, (gx1, nav_y, gx1 + btn_w, nav_y + nav_h), "<", f.small_bold, th.ink)
+        hits.append(HitRegion(gx1, nav_y, gx1 + btn_w, nav_y + nav_h, "prev_month"))
 
-        nx = rx + rw - 16
-        draw.rectangle((nx, nav_y, nx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
-        draw.text((nx + 4, nav_y - 1), ">", font=f.small_bold, fill=th.ink)
-        hits.append(HitRegion(nx, nav_y, nx + 16, nav_y + 14, "next_month"))
+        nx = gx2 - btn_w
+        draw.rectangle((nx, nav_y, gx2, nav_y + nav_h), fill=th.paper, outline=th.border_muted, width=1)
+        _draw_text_centered(draw, (nx, nav_y, gx2, nav_y + nav_h), ">", f.small_bold, th.ink)
+        hits.append(HitRegion(nx, nav_y, gx2, nav_y + nav_h, "next_month"))
 
         if view_year != today.year or view_month != today.month:
-            btn_lbl = "Today" if is_en else "H.nay"
-            tx = nx - 40
-            draw.rectangle((tx, nav_y, tx + 36, nav_y + 14), fill=th.btn_bg, outline=th.border_muted, width=1)
-            bw = _text_width(draw, btn_lbl, f.small_bold)
-            draw.text((tx + max(2, (36 - bw) // 2), nav_y), btn_lbl, font=f.small_bold, fill=th.accent)
-            hits.append(HitRegion(tx, nav_y, tx + 36, nav_y + 14, "goto_today"))
+            btn_lbl = "Today" if is_en else "Hôm nay"
+            btn_tw = _text_width(draw, btn_lbl, f.small_bold) + 10
+            tx = nx - btn_tw - 4
+            draw.rectangle((tx, nav_y, tx + btn_tw, nav_y + nav_h), fill=th.event_bg, outline=th.accent, width=1)
+            _draw_text_centered(draw, (tx, nav_y, tx + btn_tw, nav_y + nav_h), btn_lbl, f.small_bold, th.accent_dark)
+            hits.append(HitRegion(tx, nav_y, tx + btn_tw, nav_y + nav_h, "goto_today"))
             title_end_x = tx - 4
         else:
             title_end_x = nx - 4
 
     month_title = f"{pycal.month_name[view_month]} {view_year}" if is_en else f"Tháng {view_month:02d}/{view_year}"
-    tw = _text_width(draw, month_title, f.cal_title)
-    title_x = rx + 20 + max(0, (title_end_x - (rx + 20) - tw) // 2)
-    draw.text((title_x, nav_y - 1), month_title, font=f.cal_title, fill=th.ink)
+    _draw_text_centered(
+        draw,
+        (gx1 + btn_w + 4, nav_y, title_end_x, nav_y + nav_h),
+        month_title,
+        f.cal_title,
+        th.ink,
+        v_sample="T0123456789/",
+    )
 
-    wy = nav_y + 16
-    col_w = rw // 7
-    grid_x = rx + (rw - col_w * 7) // 2
     weekdays = EN_WEEKDAYS if is_en else VN_WEEKDAYS
+    wd_sample = "".join(weekdays)
     for idx, wd in enumerate(weekdays):
         cx = grid_x + idx * col_w
-        wd_w = _text_width(draw, wd, f.small_bold)
         color = (th.warn if th.style == "xiaomi" else th.accent) if idx >= 5 else th.muted
-        draw.text((cx + (col_w - wd_w) // 2, wy), wd, font=f.small_bold, fill=color)
+        _draw_text_centered(draw, (cx + 1, wy + 1, cx + col_w - 2, wy + 13), wd, f.cal_day_bold, color, v_sample=wd_sample)
 
     cal_matrix = pycal.Calendar(firstweekday=0).monthdatescalendar(view_year, view_month)
     grid_y = wy + 13
@@ -1359,8 +1493,7 @@ def _draw_inline_month_grid(
                     draw.rectangle((x1, y1, x2, y2), fill=fill_c, outline=outline_c, width=outline_w)
 
             d_txt = str(d_obj.day)
-            dw = _text_width(draw, d_txt, font_use)
-            draw.text((x1 + (x2 - x1 - dw) // 2, y1 - 1), d_txt, font=font_use, fill=txt_c)
+            _draw_text_centered(draw, (x1, y1, x2, y2), d_txt, font_use, txt_c, v_sample="0123456789")
 
             if in_month and len(day_events) > 1:
                 if is_modern:
@@ -1406,9 +1539,13 @@ def _draw_system_section(
     hits: list[HitRegion],
 ) -> None:
     is_en = (lang or "vi").strip().lower() == "en"
-    _draw_section_glyph(draw, lx, 31, th)
+    is_mod = is_modern_desktop_style(th)
+    hdr_y = 30 if is_mod else (33 if _is_paper(th) else 31)
+    glyph_y = 32 if is_mod else (33 if _is_paper(th) else 32)
+    meta_y = 32 if is_mod else (34 if _is_paper(th) else 32)
+    _draw_section_glyph(draw, lx, glyph_y, th)
     sys_hdr = "SYSTEM" if is_en else "HỆ THỐNG"
-    draw.text((lx + 16, 29), sys_hdr, font=f.section, fill=th.accent)
+    draw.text((lx + 16, hdr_y), sys_hdr, font=f.section, fill=th.accent)
 
     unit_norm = "F" if (temp_unit or "C").strip().upper() == "F" else "C"
     sys_temp_txt = ""
@@ -1435,10 +1572,10 @@ def _draw_system_section(
             sys_temp_txt = _truncate_text(draw, sys_temp_txt, f.small, max_tw)
             tw = _text_width(draw, sys_temp_txt, f.small)
         tx = lx + lw - tw
-        draw.text((tx, 31), sys_temp_txt, font=f.small, fill=th.muted)
+        draw.text((tx, meta_y), sys_temp_txt, font=f.small, fill=th.muted)
         hits.append(HitRegion(tx - 2, 28, lx + lw, 44, "toggle_temp_unit", None))
 
-    y_ram = 46
+    y_ram = 47 if _is_paper(th) else 46
     ram_lbl = f"RAM {system_stats.ram_used_gb:.1f}/{system_stats.ram_total_gb:.1f}G"
     ram_pct_txt = f"{system_stats.ram_pct}%"
     draw.text((lx, y_ram), ram_lbl, font=f.label, fill=th.ink)
@@ -1493,7 +1630,7 @@ def _draw_meeting_pill(
         draw.rounded_rectangle((x1, y1, x2, y2), radius=5, fill=th.accent)
     else:
         draw.rectangle((x1, y1, x2, y2), fill=th.accent, outline=th.accent_dark, width=1)
-    draw.text((x1 + 5, y1 + 1), label, font=f.tiny_bold, fill="#FFFFFF")
+    _draw_text_centered(draw, (x1, y1, x2, y2), label, f.tiny_bold, "#FFFFFF")
     hits.append(HitRegion(x1, y1, x2, y2, "open_url", url))
     return btn_w + 5
 
@@ -1614,8 +1751,8 @@ def _render_screen_hires(
             s_draw = _ScaledDraw(ImageDraw.Draw(s_layer), scale=float(s))
             s_fill = (*_hex_to_rgb(th.paper), scrim_a)
             s_draw.rounded_rectangle((6, 2, SCREEN_W - 7, 23), radius=6, fill=s_fill)
-            s_draw.rounded_rectangle((6, 28, div_x - 5, SCREEN_H - 5), radius=8, fill=s_fill)
-            s_draw.rounded_rectangle((div_x + 5, 28, SCREEN_W - 7, SCREEN_H - 5), radius=8, fill=s_fill)
+            s_draw.rounded_rectangle((5, 27, div_x - 4, SCREEN_H - 5), radius=6, fill=s_fill)
+            s_draw.rounded_rectangle((div_x + 4, 27, SCREEN_W - 6, SCREEN_H - 5), radius=6, fill=s_fill)
             img.alpha_composite(s_layer, (0, 0))
 
     draw = _ScaledDraw(ImageDraw.Draw(img), scale=float(s))
@@ -1758,16 +1895,6 @@ def _render_screen_hires(
         img.alpha_composite(badge, (int(round(((SCREEN_W - badge_d) // 2) * s)), by))
 
     if not is_modern:
-        _draw_fineline_rule(
-            draw,
-            8,
-            25,
-            SCREEN_W - 8,
-            25,
-            th.divider_soft if _is_paper(th) else th.ink,
-            th.accent,
-            with_dots=_is_paper(th),
-        )
         if not _is_paper(th):
             _draw_fineline_rule(draw, div_x, 30, div_x, SCREEN_H - 8, th.ink, th.accent, with_dots=False)
 
@@ -1831,26 +1958,25 @@ def _render_screen_hires(
 
                 wd_disp = day_abbr_for_lang(day.date_obj, day.weekday, lang)
                 wd_c = (th.warn if th.style == "xiaomi" else th.accent) if day.date_obj.weekday() >= 5 else th.ink
-                wd_w = _text_width(draw, wd_disp, f.tiny_bold)
-                draw.text((x1 + (x2 - x1 - wd_w) // 2, y1 + 2), wd_disp, font=f.tiny_bold, fill=wd_c)
+                _draw_text_centered(draw, (x1, y1 + 1, x2, y1 + 13), wd_disp, f.tiny_bold, wd_c, v_sample="T2CN")
 
                 _draw_weather_icon(draw, x1 + (x2 - x1 - 14) // 2, y1 + 14, day.icon, th)
 
                 hi_txt = format_temp(day.temp_max, unit_norm, with_unit=False)
                 lo_txt = format_temp(day.temp_min, unit_norm, with_unit=False)
-                hi_w = _text_width(draw, hi_txt, f.tiny_bold)
-                lo_w = _text_width(draw, lo_txt, f.tiny)
-                draw.text((x1 + (x2 - x1 - hi_w) // 2, y1 + 29), hi_txt, font=f.tiny_bold, fill=th.ink)
-                draw.text((x1 + (x2 - x1 - lo_w) // 2, y1 + 39), lo_txt, font=f.tiny, fill=th.muted)
+                _draw_text_centered(draw, (x1, y1 + 29, x2, y1 + 39), hi_txt, f.tiny_bold, th.ink, v_sample="0123456789")
+                _draw_text_centered(draw, (x1, y1 + 39, x2, y1 + 49), lo_txt, f.tiny, th.muted, v_sample="0123456789")
 
                 hits.append(HitRegion(x1, y1, x2, y2, "select_weather_day", day))
 
     # 3. Right Column (Calendar): HÔM NAY / TODAY + 1-click app buttons + 1-Month Calendar
     rx = div_x + 12
     rw = SCREEN_W - rx - 10
-    draw.text((rx, 30 if is_modern else 29), "TODAY" if is_en else "HÔM NAY", font=f.section, fill=(th.warn if th.style == "macos" else th.accent))
+    cal_hdr_y = 30 if is_modern else (33 if _is_paper(th) else 31)
+    cal_meta_y = 32 if is_modern else (34 if _is_paper(th) else 32)
+    draw.text((rx, cal_hdr_y), "TODAY" if is_en else "HÔM NAY", font=f.section, fill=(th.warn if th.style == "macos" else th.accent))
     done_txt = f"done {calendar_data.done_count}" if is_en else f"đã xong {calendar_data.done_count}"
-    draw.text((rx + rw - _text_width(draw, done_txt, f.small), 32 if is_modern else 31), done_txt, font=f.small, fill=th.muted)
+    draw.text((rx + rw - _text_width(draw, done_txt, f.small), cal_meta_y), done_txt, font=f.small, fill=th.muted)
 
     ey = 48 if is_modern else 47
     month_top_y = 92 if len(calendar_data.events_today) > 2 else 88

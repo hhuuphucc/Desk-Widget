@@ -118,6 +118,7 @@ from renderer import (
     HitRegion,
     SystemPatchCache,
     ThemePalette,
+    auto_is_dark,
     compose_bg_layer,
     format_temp,
     is_modern_desktop_style,
@@ -126,6 +127,7 @@ from renderer import (
     render_widget_cached,
     render_widget_with_hits,
     resolve_theme,
+    set_sun_location,
 )
 from system_client import SystemMonitor, SystemStats, top_cpu_processes, top_gpu_processes, top_ram_processes
 from updater import (
@@ -611,6 +613,11 @@ class ESLDeskWidget:
         self.root.bind("<Leave>", lambda _e: self.root.after(150, self._apply_z_order))
 
         self._build_menu()
+        try:
+            _w0 = self.cfg.get("weather") or {}
+            set_sun_location(_w0.get("latitude"), _w0.get("longitude"))
+        except Exception:
+            pass
         if bool(self.cfg.get("auto_start", True)) and not is_autostart_enabled():
             set_autostart(True, _active_icon_path(self.cfg))
         self._render_initial_placeholder()
@@ -802,7 +809,7 @@ class ESLDeskWidget:
             mode = str(self.cfg.get("theme", "auto")).strip().lower()
             if mode in ("system", "os", "auto") and self._last_cal is not None:
                 now = self._active_now()
-                cur_dark = is_system_dark_mode() if mode in ("system", "os") else (now.hour >= 18 or now.hour < 6)
+                cur_dark = is_system_dark_mode() if mode in ("system", "os") else auto_is_dark(now)
                 if self._last_observed_dark is not None and cur_dark != self._last_observed_dark:
                     self._redraw_from_state(now=now)
                 else:
@@ -975,9 +982,9 @@ class ESLDeskWidget:
             self.view_month = today.month
             self.selected_date = today
             self.selected_weather_date = None
+            self._close_detail_popup()
             self._last_cal = self.calendar_client.render_month_from_cache(tz_name, self.view_year, self.view_month)
             self._redraw_from_state()
-            self._open_day_detail_popup(today)
 
     def _close_detail_popup(self) -> None:
         if self._detail_win is not None and self._detail_win.winfo_exists():
@@ -2236,6 +2243,7 @@ class ESLDeskWidget:
             cfg = self.cfg
             w_cfg = cfg["weather"]
             city, lat, lon = self.weather_client.resolve_location(w_cfg, force=force_weather)
+            set_sun_location(lat, lon)
             weather = self.weather_client.get_weather(
                 city=city,
                 latitude=lat,
@@ -4048,8 +4056,10 @@ class ESLDeskWidget:
         tk.Label(app_opts, text="Theme:" if is_en else "Chế độ sáng/tối:", bg=p.card, fg=p.ink, font=("Segoe UI", 10)).grid(
             row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 10)
         )
+        theme_cell = tk.Frame(app_opts, bg=p.card)
+        theme_cell.grid(row=0, column=1, sticky="w", padx=(0, 14), pady=(0, 10))
         make_pill_dropdown(
-            app_opts,
+            theme_cell,
             var_theme_set,
             values=["auto", "system", "light", "dark"],
             palette=p,
@@ -4057,7 +4067,26 @@ class ESLDeskWidget:
             width_px=130,
             height=32,
             command=lambda _v: _live_switch_palette(),
-        ).grid(row=0, column=1, sticky="w", padx=(0, 14), pady=(0, 10))
+        ).pack(side="left")
+        make_info_button(
+            theme_cell,
+            title="Light/Dark mode" if is_en else "Chế độ sáng/tối",
+            message=(
+                "• auto: follows sunrise and sunset at the widget's location (the same location & timezone used for weather). "
+                "Light after sunrise, dark after sunset — it shifts automatically with the seasons.\n\n"
+                "• system: follows the Windows/macOS light/dark setting.\n\n"
+                "• light / dark: always light or always dark."
+                if is_en
+                else "• auto: theo giờ mặt trời mọc và lặn tại vị trí của widget (cùng vị trí & múi giờ dùng cho thời tiết). "
+                "Sáng sau khi mặt trời mọc, tối sau khi mặt trời lặn — tự thay đổi theo mùa.\n\n"
+                "• system: theo chế độ sáng/tối của Windows/macOS.\n\n"
+                "• light / dark: luôn sáng hoặc luôn tối."
+            ),
+            palette=p,
+            parent_bg=p.card,
+            size=22,
+            ok_text="Got it" if is_en else "Đã hiểu",
+        ).pack(side="left", padx=(6, 0))
 
         tk.Label(app_opts, text="Scale:" if is_en else "Cỡ widget:", bg=p.card, fg=p.ink, font=("Segoe UI", 10)).grid(
             row=0, column=2, sticky="w", padx=(0, 8), pady=(0, 10)
@@ -4997,6 +5026,11 @@ class ESLDeskWidget:
             save_config(self.cfg)
             self._apply_z_order()
             self._build_menu()
+            try:
+                _w0 = self.cfg.get("weather") or {}
+                set_sun_location(_w0.get("latitude"), _w0.get("longitude"))
+            except Exception:
+                pass
             win.destroy()
             self.trigger_refresh(force_weather=True)
 

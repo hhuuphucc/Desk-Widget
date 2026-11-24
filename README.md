@@ -25,11 +25,11 @@ A lightweight, cross-platform E-Ink-inspired desktop widget for **Windows** and 
   - **Ocean Calm / Mist Blue (`botanical`):** Soothing mist-blue soft paper palette with clean column spacing and circular logo / background support.
   - **Paper Serif (`serif`):** Textured cold-pressed paper card with `Palatino Linotype Bold` headings + `Segoe UI` body text (automatically maps to `Georgia Bold` + `Arial`/`SFNS` on macOS).
   - **Sans E-Ink (`sans`):** Minimal high-contrast 3-color E-Ink style (`Segoe UI`, Black / White / Red).
-  - **Theme Modes:** `auto` (Light `06:00–17:59`, Dark `18:00–05:59`), `system` (follow Windows/macOS Light or Dark appearance automatically), `light`, or `dark`. Switching style or theme updates **both the desktop widget and the Settings window immediately in-place** without flickering or reopening.
+  - **Theme Modes:** `auto` (automatically switches Light/Dark based on local sunrise & sunset at your configured location and timezone, including seasonal DST changes), `system` (follow Windows/macOS Light or Dark appearance automatically), `light`, or `dark`. Switching style or theme updates **both the desktop widget and the Settings window immediately in-place** without flickering or reopening.
 - **Multi-Source Google Calendar & 1-Month Grid:**
   - Manage multiple independent `.ics` calendars with custom labels (secret/public `.ics` URLs, Google Calendar `/embed?src=...` links, `webcal://`, or local `.ics` files).
-  - Automatically updates calendar & header clock timezone based on IP location when travelling abroad (when IP geolocation is enabled).
-  - Interactive **1-month calendar grid** right below `TODAY` (highlights event days, `<` / `>` month navigation, `Today` jump button).
+  - Automatically updates calendar & header clock timezone based on IP location when travelling abroad (when IP geolocation is enabled), with automatic seasonal Daylight Saving Time (DST) handling for regions like Europe/US.
+  - Interactive **1-month calendar grid** right below `TODAY` (optically centered dates & buttons, `<` / `>` month navigation, and an automatic `Today` button when viewing another month).
   - Click any date or truncated event row to open a detailed popup with **1-click launch buttons** for `Zoom`, `Discord`, `Google Meet`, `Teams`, `Zalo`, `Telegram`, `Messenger`, `Slack`, `Google Docs/Sheets/Slides/Drive`, `Notion`, `Figma`, `GitHub`, `YouTube`, `Google Maps`, and more.
   - **Customizable Event Reminders & Personal Events:** Create custom reminders on **any date** (no Google Calendar link required) with **All-day / Timed**, **Yearly / Monthly / Weekly / Weekdays / Daily / Custom** recurrence, **Location** (+ 1-click **Open Maps**), and flexible alerts (**minutes / hours / days / weeks** before, at custom `HH:MM`, plus **Snooze 5m**). Also notifies before upcoming Google Calendar `.ics` timed events (`0–240` min customizable in **Settings**).
 - **7-Day Weather Forecast (`Mon → Sun`) via Open-Meteo:**
@@ -212,11 +212,11 @@ Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Appl
   - **Ocean Calm / Mist Blue (`botanical`):** Tông xanh dương dịu mắt trên nền giấy mịn, bỏ chia dọc rối mắt và hỗ trợ ảnh nền / logo tròn.
   - **Paper Serif (`serif`):** Nền giấy vân mịn, tiêu đề font có chân `Palatino Linotype Bold` + nội dung `Segoe UI` rõ nét (trên macOS tự chuyển sang `Georgia Bold` + `Arial`/`SFNS` hỗ trợ đầy đủ tiếng Việt).
   - **Sans E-Ink (`sans`):** Giao diện tối giản tương phản cao 3 màu (Đen – Trắng – Đỏ).
-  - **Chế độ màu:** `auto` (Sáng `06:00–17:59`, tối `18:00–05:59`), `system` (theo giao diện Windows/macOS), `light`, hoặc `dark`. Khi bấm chọn Style hoặc Sáng/Tối, **cả widget lẫn cửa sổ Cài đặt đổi màu ngay tại chỗ** mà không bị tắt/mở lại cửa sổ.
+  - **Chế độ màu:** `auto` (tự động đổi Sáng/Tối theo giờ mặt trời mọc/lặn tại vị trí & múi giờ cài đặt, tự theo mùa & giờ mùa hè/đông), `system` (theo giao diện Windows/macOS), `light`, hoặc `dark`. Khi bấm chọn Style hoặc Sáng/Tối, **cả widget lẫn cửa sổ Cài đặt đổi màu ngay tại chỗ** mà không bị tắt/mở lại cửa sổ.
 - **Google Calendar đa nguồn & Lịch 1 tháng:**
   - Quản lý nhiều lịch độc lập kèm **tên lịch riêng** (hỗ trợ link `.ics` bí mật, `.ics` công khai, link Google Calendar `/embed?src=...`, `webcal://`, hoặc file `.ics` trên máy).
-  - Tự động cập nhật múi giờ lịch & đồng hồ theo vị trí IP khi đi nước ngoài (nếu bật định vị IP).
-  - Lưới **lịch 1 tháng** ngay trong khung `HÔM NAY` (tô màu những ngày có lịch, bấm `<` / `>` đổi tháng, bấm `H.nay` về hôm nay).
+  - Tự động cập nhật múi giờ lịch & đồng hồ theo vị trí IP khi đi nước ngoài (nếu bật định vị IP), đồng thời tự chuyển theo quy ước đổi giờ mùa hè/mùa đông (DST) ở châu Âu/Mỹ.
+  - Lưới **lịch 1 tháng** ngay trong khung `HÔM NAY` (căn giữa đều chữ & số, nút `<` / `>` đổi tháng thẳng hàng, tự hiện nút `Hôm nay` khi chuyển sang tháng khác).
   - Bấm vào ô ngày hoặc dòng sự kiện rút gọn để mở popup chi tiết đầy đủ kèm **nút mở thẳng 1-click** cho nhiều ứng dụng (`Zoom`, `Discord`, `Google Meet`, `Teams`, `Zalo`, `Telegram`, `Messenger`, `Slack`, `Google Docs/Sheets/Slides/Drive`, `Notion`, `Figma`, `GitHub`, `YouTube`, `Google Maps`...).
   - **Nhắc nhở sự kiện & Tạo lịch cá nhân:** Tự tạo sự kiện/lời nhắc cho **bất kỳ ngày nào** (không cần có sẵn sự kiện Google Calendar) với tùy chọn **Cả ngày / Theo giờ**, lặp lại **Không lặp / Hàng ngày / Hàng tuần / Hàng tháng / Hàng năm / T2–T6 / Tùy chỉnh**, **Thêm vị trí** (kèm nút **Mở Maps**), và hẹn báo trước theo **phút / giờ / ngày / tuần** (`lúc HH:MM`, có **Nhắc lại sau 5 phút**). Đồng thời tự nhắc trước sự kiện `.ics` trong ngày (`0–240` phút trong **Cài đặt**).
 - **Thời tiết 7 ngày (`T2 → CN`) qua Open-Meteo:**
