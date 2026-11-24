@@ -93,3 +93,17 @@ jobs:
           else
             gh release create "$TAG_NAME" all_assets/* --title "desk-widget $TAG_NAME" --generate-notes
           fi
+          if [ -f all_assets/UNINSTALL.txt ]; then
+            BASE_NOTES=$(gh release view "$TAG_NAME" --json body -q .body)
+            cat > uninstall_note.md <<'EOF'
+---
+
+### Complete Uninstall / Gỡ bỏ hoàn toàn ứng dụng (Windows & macOS)
+
+Download [`UNINSTALL.txt`](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/UNINSTALL.txt) from Assets above, or see [`UNINSTALL.txt`](https://github.com/hhuuphucc/Desk-Widget/blob/main/UNINSTALL.txt) for copy-paste PowerShell / CMD / Terminal commands.
+EOF
+            if ! grep -q "Complete Uninstall" <<< "$BASE_NOTES"; then
+              printf '%s\n\n%s\n' "$BASE_NOTES" "$(cat uninstall_note.md)" > combined_notes.md
+              gh release edit "$TAG_NAME" --notes-file combined_notes.md
+            fi
+          fi

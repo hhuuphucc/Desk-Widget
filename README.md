@@ -7,6 +7,7 @@
 > - **Windows 10/11 (`.exe`):** [**Download `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-windows-x64.exe) *(First run SmartScreen: **More info → Run anyway**)*
 > - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Download `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(First run: drag to Applications, **Right-click → Open**)*
 > - **macOS Intel (`.dmg`):** [**Download `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-intel.dmg) *(First run: drag to Applications, **Right-click → Open**)*
+> - **Uninstall Commands (Win / macOS):** [**Download `UNINSTALL.txt`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/UNINSTALL.txt) *(or see [Complete Uninstall](#complete-uninstall-remove-100-of-app-downloaded-files--local-data))*
 > - **Notes & Troubleshooting:** Read [**`INFO.md`**](INFO.md) for IP geolocation/VPN exceptions, manual `City` / `Lat/Lon` / `Timezone` tips, real-time CPU popup details, and Windows/macOS first-launch notes.
 
 ---
@@ -197,6 +198,7 @@ python test_widget.py -v
 > - **Windows 10/11 (`.exe`):** [**Tải `desk-widget-windows-x64.exe`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-windows-x64.exe) *(Lần đầu nếu SmartScreen hỏi: **More info → Run anyway**)*
 > - **macOS Apple Silicon M1–M4 (`.dmg`):** [**Tải `desk-widget-macos-apple-silicon.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-apple-silicon.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
 > - **macOS Intel (`.dmg`):** [**Tải `desk-widget-macos-intel.dmg`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/desk-widget-macos-intel.dmg) *(Kéo vào Applications, **Chuột phải → Open**)*
+> - **Lệnh gỡ cài đặt sạch (Win / macOS):** [**Tải `UNINSTALL.txt`**](https://github.com/hhuuphucc/Desk-Widget/releases/latest/download/UNINSTALL.txt) *(hoặc xem mục [Gỡ bỏ hoàn toàn](#gỡ-bỏ-hoàn-toàn-ứng-dụng-xóa-sạch-app-đã-tải--dữ-liệu-khi-không-dùng-nữa))*
 > - **Lưu ý quan trọng khi dùng:** Xem file [**`INFO.md`**](INFO.md#tiếng-việt) để biết chi tiết về định vị IP / VPN, tự nhập `Thành phố` / `Lat/Lon` / `Múi giờ`, giải thích chỉ số CPU khi bấm xem chi tiết và lưu ý Windows/macOS.
 
 Widget để bàn nhỏ gọn đa nền tảng cho **Windows** và **macOS (Apple Silicon M1/M2/M3/M4 & Intel)** (`Tkinter` + `Pillow`), hỗ trợ **6 phong cách giao diện Light/Dark đồng bộ** (`macOS`, `Pixel`, `Xiaomi HyperOS`, `Ocean Calm / Mist Blue`, `Paper Serif`, `Sans`). Tự động làm mới mỗi **60 giây** ở luồng nền, tự đồng bộ múi giờ theo IP và hỗ trợ **Tiếng Việt / English** cùng **`°C` / `°F`**.
