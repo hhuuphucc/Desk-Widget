@@ -16,6 +16,113 @@ import requests
 
 VN_WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
 EN_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+ICS_WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+VN_WEEKDAY_FULL = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+EN_WEEKDAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+def parse_clock_time(raw_str: str, default_val: tuple[int, int] = (9, 0)) -> tuple[int, int]:
+    """Parse 24h ('17:00') or 12h ('5:00PM', '5:00 PM') clock strings to (hour, minute)."""
+    txt = (raw_str or "").strip().upper()
+    m = re.match(r"^(\d{1,2})\s*[:hH]\s*(\d{2})\s*(AM|PM)?$", txt)
+    if not m:
+        return default_val
+    hh = int(m.group(1))
+    mm = int(m.group(2))
+    ampm = m.group(3)
+    if ampm == "PM" and hh < 12:
+        hh += 12
+    elif ampm == "AM" and hh == 12:
+        hh = 0
+    if not (0 <= hh <= 23 and 0 <= mm <= 59):
+        return default_val
+    return (hh, mm)
+
+
+def _escape_ics(value: str) -> str:
+    return (
+        (value or "")
+        .replace("\\", "\\\\")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\n", "\\n")
+        .replace(",", "\\,")
+        .replace(";", "\\;")
+    )
+
+
+def build_rrule_from_preset(
+    preset: str,
+    start_d: date,
+    custom_interval: int = 1,
+    custom_freq: str = "YEARLY",
+    custom_weekdays: list[int] | None = None,
+) -> str:
+    """Build an RFC-5545 RRULE string from preset or custom recurrence options."""
+    p = (preset or "none").strip().lower()
+    wd_code = ICS_WEEKDAYS[start_d.weekday()]
+    if p == "daily":
+        return "FREQ=DAILY"
+    if p == "weekly":
+        return f"FREQ=WEEKLY;BYDAY={wd_code}"
+    if p == "monthly_day":
+        return f"FREQ=MONTHLY;BYMONTHDAY={start_d.day}"
+    if p == "monthly_nth":
+        nth = (start_d.day - 1) // 7 + 1
+        return f"FREQ=MONTHLY;BYDAY={nth}{wd_code}"
+    if p == "yearly":
+        return f"FREQ=YEARLY;BYMONTH={start_d.month};BYMONTHDAY={start_d.day}"
+    if p == "weekdays":
+        return "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+    if p == "custom":
+        freq = (custom_freq or "YEARLY").strip().upper()
+        if freq not in ("DAILY", "WEEKLY", "MONTHLY", "YEARLY"):
+            freq = "YEARLY"
+        interval = max(1, min(999, int(custom_interval or 1)))
+        parts = [f"FREQ={freq}"]
+        if interval > 1:
+            parts.append(f"INTERVAL={interval}")
+        if freq == "WEEKLY" and custom_weekdays:
+            codes = [ICS_WEEKDAYS[i] for i in sorted(set(custom_weekdays)) if 0 <= i <= 6]
+            if codes:
+                parts.append("BYDAY=" + ",".join(codes))
+        elif freq == "MONTHLY":
+            parts.append(f"BYMONTHDAY={start_d.day}")
+        elif freq == "YEARLY":
+            parts.append(f"BYMONTH={start_d.month};BYMONTHDAY={start_d.day}")
+        return ";".join(parts)
+    return ""
+
+
+def describe_repeat_options(start_d: date, lang: str = "vi") -> list[tuple[str, str]]:
+    """Return [(preset_key, localized_label), ...] matching Google Calendar's recurrence menu."""
+    is_en = (lang or "vi").strip().lower() == "en"
+    wd = (EN_WEEKDAY_FULL if is_en else VN_WEEKDAY_FULL)[start_d.weekday()]
+    nth = (start_d.day - 1) // 7 + 1
+    if is_en:
+        ord_map = {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth"}
+        nth_lbl = ord_map.get(nth, f"{nth}th")
+        return [
+            ("none", "Does not repeat"),
+            ("daily", "Daily"),
+            ("weekly", f"Weekly on {wd}"),
+            ("monthly_day", f"Monthly on day {start_d.day}"),
+            ("monthly_nth", f"Monthly on the {nth_lbl} {wd}"),
+            ("yearly", f"Annually on {start_d.strftime('%b')} {start_d.day}"),
+            ("weekdays", "Every weekday (Monday to Friday)"),
+            ("custom", "Custom..."),
+        ]
+    nth_vi = "đầu tiên" if nth == 1 else f"thứ {nth}"
+    return [
+        ("none", "Không lặp lại"),
+        ("daily", "Hàng ngày"),
+        ("weekly", f"Hàng tuần vào {wd}"),
+        ("monthly_day", f"Hàng tháng vào ngày {start_d.day}"),
+        ("monthly_nth", f"Hàng tháng vào {wd} {nth_vi}"),
+        ("yearly", f"Hàng năm vào ngày {start_d.day} tháng {start_d.month}"),
+        ("weekdays", "Mọi ngày trong tuần (từ Thứ Hai tới Thứ Sáu)"),
+        ("custom", "Tùy chỉnh..."),
+    ]
 
 
 def format_event_time(ev: "CalendarEvent", lang: str = "vi", with_range: bool = False) -> str:
@@ -45,6 +152,8 @@ class CalendarEvent:
     description: str = ""
     calendar_name: str = ""
     conference_url: str = ""
+    uid: str = ""
+    is_recurring: bool = False
 
     @property
     def time_label(self) -> str:
@@ -417,6 +526,7 @@ def _expand_events(
 
             is_ongoing = (not is_all_day) and (occ_start <= now < occ_end)
             is_done = (not is_all_day) and (occ_end <= now)
+            is_rec = bool(ev.get("rrule") or "recurrence_id" in ev)
             expanded.append(
                 CalendarEvent(
                     title=title,
@@ -429,10 +539,227 @@ def _expand_events(
                     description=description,
                     calendar_name=calendar_name,
                     conference_url=conference_url,
+                    uid=uid,
+                    is_recurring=is_rec,
                 )
             )
 
     return expanded
+
+
+def event_occurrence_key(ev: CalendarEvent) -> str:
+    """Stable key identifying a specific occurrence (distinguishes recurring days)."""
+    ident = (ev.uid or ev.title or "").strip()
+    return f"{ev.calendar_name}|{ident}|{ev.start.isoformat()}"
+
+
+def find_due_reminders(
+    events: list[CalendarEvent],
+    now: datetime,
+    minutes_before: int = 15,
+    notified_keys: set[str] | None = None,
+) -> list[tuple[str, CalendarEvent, int]]:
+    """Return un-notified timed events starting within minutes_before (supports recurring & one-off)."""
+    lead_mins = max(0, min(240, int(minutes_before)))
+    upper_secs = max(30, lead_mins * 60)
+    seen = notified_keys or set()
+    due: list[tuple[str, CalendarEvent, int]] = []
+
+    for ev in events:
+        if ev.is_all_day or ev.is_done:
+            continue
+        start_dt = ev.start
+        cmp_now = now
+        if start_dt.tzinfo is not None and cmp_now.tzinfo is None:
+            cmp_now = cmp_now.replace(tzinfo=start_dt.tzinfo)
+        elif start_dt.tzinfo is None and cmp_now.tzinfo is not None:
+            cmp_now = cmp_now.replace(tzinfo=None)
+
+        secs_left = (start_dt - cmp_now).total_seconds()
+        if -60.0 <= secs_left <= upper_secs:
+            key = event_occurrence_key(ev)
+            if key in seen:
+                continue
+            mins_left = max(0, int((secs_left + 30.0) // 60)) if secs_left > 0 else 0
+            due.append((key, ev, mins_left))
+
+    due.sort(key=lambda item: (item[1].start, item[1].title))
+    return due
+
+
+def _parse_local_event_item(item: dict, default_tz) -> dict | None:
+    """Normalize a local_events config item into raw VEVENT fields."""
+    if not isinstance(item, dict) or not bool(item.get("enabled", True)):
+        return None
+    title = str(item.get("title") or "").strip()
+    if not title:
+        return None
+    s_str = str(item.get("start_date") or "").strip()
+    e_str = str(item.get("end_date") or s_str).strip()
+    try:
+        sd = date.fromisoformat(s_str)
+        ed = date.fromisoformat(e_str)
+    except ValueError:
+        return None
+    if ed < sd:
+        ed = sd
+    all_day = bool(item.get("all_day", True))
+    if all_day:
+        dtstart = datetime.combine(sd, time(0, 0), tzinfo=default_tz)
+        dtend = datetime.combine(ed + timedelta(days=1), time(0, 0), tzinfo=default_tz)
+    else:
+        sh, sm = parse_clock_time(str(item.get("start_time") or "09:00"), (9, 0))
+        eh, em = parse_clock_time(str(item.get("end_time") or f"{(sh + 1) % 24:02d}:{sm:02d}"), ((sh + 1) % 24, sm))
+        dtstart = datetime.combine(sd, time(sh, sm), tzinfo=default_tz)
+        dtend = datetime.combine(ed, time(eh, em), tzinfo=default_tz)
+        if dtend <= dtstart:
+            dtend = dtstart + timedelta(hours=1)
+
+    rrule = str(item.get("rrule") or "").strip()
+    if not rrule:
+        preset = str(item.get("repeat") or "none").strip().lower()
+        if preset != "none":
+            rrule = build_rrule_from_preset(
+                preset,
+                sd,
+                custom_interval=int(item.get("custom_interval", 1) or 1),
+                custom_freq=str(item.get("custom_freq") or "YEARLY"),
+                custom_weekdays=item.get("custom_weekdays") if isinstance(item.get("custom_weekdays"), list) else None,
+            )
+
+    raw_ev: dict = {
+        "uid": str(item.get("id") or f"local-{s_str}-{title[:16]}"),
+        "summary": title,
+        "dtstart": dtstart,
+        "dtend": dtend,
+        "is_all_day": all_day,
+        "location": str(item.get("location") or "").strip(),
+        "description": str(item.get("notes") or "").strip(),
+        "exdates": [],
+    }
+    if rrule:
+        raw_ev["rrule"] = rrule
+    return raw_ev
+
+
+def local_events_to_ics(local_events: list[dict], tz_name: str = "Asia/Ho_Chi_Minh") -> str:
+    """Serialize user's local_events list into a valid VCALENDAR ICS string."""
+    default_tz = _get_tz(tz_name)
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//hhuuphucc//desk-widget//EN"]
+    count = 0
+    for item in local_events or []:
+        raw_ev = _parse_local_event_item(item, default_tz)
+        if raw_ev is None:
+            continue
+        count += 1
+        lines.append("BEGIN:VEVENT")
+        lines.append(f"UID:{_escape_ics(raw_ev['uid'])}")
+        lines.append(f"SUMMARY:{_escape_ics(raw_ev['summary'])}")
+        if raw_ev["is_all_day"]:
+            lines.append(f"DTSTART;VALUE=DATE:{raw_ev['dtstart'].strftime('%Y%m%d')}")
+            lines.append(f"DTEND;VALUE=DATE:{raw_ev['dtend'].strftime('%Y%m%d')}")
+        else:
+            lines.append(f"DTSTART;TZID={tz_name}:{raw_ev['dtstart'].strftime('%Y%m%dT%H%M%S')}")
+            lines.append(f"DTEND;TZID={tz_name}:{raw_ev['dtend'].strftime('%Y%m%dT%H%M%S')}")
+        if raw_ev.get("rrule"):
+            lines.append(f"RRULE:{raw_ev['rrule']}")
+        if raw_ev.get("location"):
+            lines.append(f"LOCATION:{_escape_ics(raw_ev['location'])}")
+        if raw_ev.get("description"):
+            lines.append(f"DESCRIPTION:{_escape_ics(raw_ev['description'])}")
+        lines.append("END:VEVENT")
+    if count == 0:
+        return ""
+    lines.append("END:VCALENDAR")
+    return "\n".join(lines) + "\n"
+
+
+def find_due_local_reminders(
+    local_events: list[dict],
+    now: datetime,
+    tz_name: str = "Asia/Ho_Chi_Minh",
+    notified_keys: set[str] | None = None,
+) -> list[tuple[str, CalendarEvent, int]]:
+    """Evaluate custom local events with per-event lead time (minutes/hours/days/weeks at HH:MM)."""
+    default_tz = _get_tz(tz_name)
+    if now.tzinfo is None:
+        cmp_now = now.replace(tzinfo=default_tz)
+    else:
+        cmp_now = now.astimezone(default_tz)
+    seen = notified_keys or set()
+    due: list[tuple[str, CalendarEvent, int]] = []
+
+    for item in local_events or []:
+        if not isinstance(item, dict) or not bool(item.get("notify_enabled", True)):
+            continue
+        raw_ev = _parse_local_event_item(item, default_tz)
+        if raw_ev is None:
+            continue
+
+        raw_rules = item.get("notifications")
+        if isinstance(raw_rules, list) and raw_rules:
+            rules = [r for r in raw_rules if isinstance(r, dict)]
+        else:
+            rules = [
+                {
+                    "value": item.get("notify_value", 1 if raw_ev["is_all_day"] else 15),
+                    "unit": item.get("notify_unit") or ("days" if raw_ev["is_all_day"] else "minutes"),
+                    "at": item.get("notify_at") or "09:00",
+                }
+            ]
+        if not rules:
+            continue
+
+        max_look = 10
+        norm_rules: list[tuple[int, str, str]] = []
+        for r in rules:
+            unit = str(r.get("unit") or ("days" if raw_ev["is_all_day"] else "minutes")).strip().lower()
+            try:
+                val = max(0, int(r.get("value", 1 if raw_ev["is_all_day"] else 15)))
+            except Exception:
+                val = 1 if raw_ev["is_all_day"] else 15
+            at_str = str(r.get("at") or "09:00")
+            norm_rules.append((val, unit, at_str))
+            if unit == "days":
+                max_look = max(max_look, val + 3)
+            elif unit == "weeks":
+                max_look = max(max_look, val * 7 + 3)
+            elif unit == "hours":
+                max_look = max(max_look, (val // 24) + 3)
+
+        win_start = cmp_now - timedelta(days=1)
+        win_end = cmp_now + timedelta(days=max_look)
+        occs = _expand_events([raw_ev], win_start, win_end, cmp_now, default_tz, calendar_name="")
+
+        for occ in occs:
+            for val, unit, at_str in norm_rules:
+                nh, nm = parse_clock_time(at_str, (9, 0))
+                if occ.is_all_day or unit in ("days", "weeks"):
+                    days_off = val * 7 if unit == "weeks" else (val if unit == "days" else 0)
+                    trig_d = occ.start.date() - timedelta(days=days_off)
+                    notify_dt = datetime.combine(trig_d, time(nh, nm), tzinfo=default_tz)
+                    if unit == "hours":
+                        notify_dt -= timedelta(hours=val)
+                    elif unit == "minutes":
+                        notify_dt -= timedelta(minutes=val)
+                    diff_secs = (cmp_now - notify_dt).total_seconds()
+                    if not (0.0 <= diff_secs <= 900.0):
+                        continue
+                else:
+                    mins_off = val * 60 if unit == "hours" else val
+                    notify_dt = occ.start - timedelta(minutes=mins_off)
+                    if not (notify_dt <= cmp_now <= occ.start + timedelta(seconds=60)):
+                        continue
+
+                occ_key = f"local|{occ.uid or occ.title}|{occ.start.date().isoformat()}|{unit}:{val}:{nh:02d}{nm:02d}"
+                if occ_key in seen:
+                    continue
+                secs_left = (occ.start - cmp_now).total_seconds()
+                mins_left = max(0, int((secs_left + 30.0) // 60)) if secs_left > 0 else 0
+                due.append((occ_key, occ, mins_left))
+
+    due.sort(key=lambda x: (x[1].start, x[1].title))
+    return due
 
 
 def _index_events_by_date(
@@ -548,6 +875,7 @@ class CalendarClient:
 
     def __init__(self) -> None:
         self._raw_payloads: list[tuple[str, str]] = []
+        self._local_payload: tuple[str, str] | None = None
         self._last_error: str | None = None
         self._has_urls: bool = False
         self._last_synced: datetime | None = None
@@ -559,16 +887,29 @@ class CalendarClient:
         view_year: int | None = None,
         view_month: int | None = None,
         timeout: int = 12,
+        local_events: list[dict] | None = None,
+        local_label: str = "Nhắc riêng",
     ) -> CalendarSummary:
         default_tz = _get_tz(tz_name)
         now = datetime.now(default_tz)
         active = _coerce_sources(sources)
         self._has_urls = bool(active)
 
+        local_ics = local_events_to_ics(local_events or [], tz_name=tz_name)
+        self._local_payload = (local_label, local_ics) if local_ics else None
+
         if not active:
             self._raw_payloads = []
             self._last_error = None
             self._last_synced = now
+            if self._local_payload is not None:
+                return parse_ics_for_date(
+                    [self._local_payload],
+                    now=now,
+                    tz_name=tz_name,
+                    view_year=view_year,
+                    view_month=view_month,
+                )
             return CalendarSummary(
                 events_today=[],
                 upcoming_events=[],
@@ -617,9 +958,12 @@ class CalendarClient:
         self._last_synced = now
         if not payloads:
             self._last_error = errors[0] if errors else "Không tải được lịch"
-            if self._raw_payloads:
+            if self._raw_payloads or self._local_payload is not None:
+                merged = list(self._raw_payloads)
+                if self._local_payload is not None:
+                    merged.append(self._local_payload)
                 summary = parse_ics_for_date(
-                    self._raw_payloads,
+                    merged,
                     now=now,
                     tz_name=tz_name,
                     view_year=view_year,
@@ -638,8 +982,11 @@ class CalendarClient:
 
         self._raw_payloads = payloads
         self._last_error = errors[0] if errors else None
+        merged = list(payloads)
+        if self._local_payload is not None:
+            merged.append(self._local_payload)
         summary = parse_ics_for_date(
-            payloads,
+            merged,
             now=now,
             tz_name=tz_name,
             view_year=view_year,
@@ -656,7 +1003,7 @@ class CalendarClient:
     ) -> CalendarSummary:
         default_tz = _get_tz(tz_name)
         now = datetime.now(default_tz)
-        if not self._has_urls:
+        if not self._has_urls and self._local_payload is None:
             return CalendarSummary(
                 events_today=[],
                 upcoming_events=[],
@@ -664,7 +1011,7 @@ class CalendarClient:
                 has_urls=False,
                 last_synced=now,
             )
-        if not self._raw_payloads:
+        if not self._raw_payloads and self._local_payload is None:
             return CalendarSummary(
                 events_today=[],
                 upcoming_events=[],
@@ -673,8 +1020,11 @@ class CalendarClient:
                 error=self._last_error,
                 last_synced=now,
             )
+        merged = list(self._raw_payloads)
+        if self._local_payload is not None:
+            merged.append(self._local_payload)
         summary = parse_ics_for_date(
-            self._raw_payloads,
+            merged,
             now=now,
             tz_name=tz_name,
             view_year=view_year,

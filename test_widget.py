@@ -10,14 +10,21 @@ from calendar_client import CalendarEvent, extract_meeting_links, normalize_cale
 from renderer import (
     BOTANICAL_DARK,
     BOTANICAL_LIGHT,
+    MACOS_DARK,
+    MACOS_LIGHT,
     MINIMAL_SANS_DARK,
     MINIMAL_SANS_LIGHT,
     PAPER_SERIF_DARK,
     PAPER_SERIF_LIGHT,
+    PIXEL_DARK,
+    PIXEL_LIGHT,
+    XIAOMI_DARK,
+    XIAOMI_LIGHT,
     _load_circle_logo,
     convert_temp,
     export_esl_bitmap,
     format_temp,
+    is_modern_desktop_style,
     patch_widget_system_stats,
     render_screen,
     render_widget_cached,
@@ -131,6 +138,13 @@ class TestESLWidget(unittest.TestCase):
         self.assertEqual(resolve_theme("auto", datetime(2026, 11, 23, 10, 0), style="botanical"), BOTANICAL_LIGHT)
         self.assertEqual(resolve_theme("system", style="botanical", system_is_dark=True), BOTANICAL_DARK)
         self.assertEqual(resolve_theme("system", style="botanical", system_is_dark=False), BOTANICAL_LIGHT)
+        self.assertNotEqual(BOTANICAL_LIGHT.accent, PAPER_SERIF_LIGHT.accent)
+        self.assertEqual(resolve_theme("light", style="macos"), MACOS_LIGHT)
+        self.assertEqual(resolve_theme("dark", style="macos"), MACOS_DARK)
+        self.assertEqual(resolve_theme("light", style="pixel"), PIXEL_LIGHT)
+        self.assertEqual(resolve_theme("dark", style="pixel"), PIXEL_DARK)
+        self.assertEqual(resolve_theme("light", style="xiaomi"), XIAOMI_LIGHT)
+        self.assertEqual(resolve_theme("dark", style="xiaomi"), XIAOMI_DARK)
 
         from unittest.mock import MagicMock, patch
         import renderer
@@ -150,6 +164,11 @@ class TestESLWidget(unittest.TestCase):
         self.assertTrue(0 <= stats.cpu_pct <= 100)
         ram_procs = top_ram_processes(5)
         self.assertGreater(len(ram_procs), 0)
+        from system_client import top_cpu_processes
+
+        cpu_procs = top_cpu_processes(0.3, 5)
+        for item in cpu_procs:
+            self.assertTrue(0.0 <= item["pct"] <= 100.0)
 
         # Verify zero-block real-time polling + cross-thread shared CPU baseline + partial SYSTEM patch
         mon = SystemMonitor()
@@ -391,6 +410,8 @@ class TestESLWidget(unittest.TestCase):
         import widget
 
         self.assertEqual(updater.APP_COPYRIGHT, "Copyright (c) 2026 hhuuphucc")
+        self.assertEqual(updater.APP_EMAIL, "hhuuphucc@gmail.com")
+        self.assertEqual(updater.GITHUB_PROFILE_URL, "https://github.com/hhuuphucc")
         self.assertEqual(updater.APP_LICENSE, "MIT License")
         self.assertEqual(widget.__copyright__, updater.APP_COPYRIGHT)
         self.assertEqual(widget.__license__, updater.APP_LICENSE)
@@ -398,6 +419,289 @@ class TestESLWidget(unittest.TestCase):
 
         empty_cal = CalendarClient().fetch([], tz_name="Asia/Ho_Chi_Minh")
         self.assertFalse(empty_cal.has_urls)
+
+    def test_event_reminders_recurring_and_oneoff(self) -> None:
+        from calendar_client import find_due_reminders
+
+        tz_vn = timezone(timedelta(hours=7))
+        ics_payload = """BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:all-day-rem
+DTSTART;VALUE=DATE:20261124
+DTEND;VALUE=DATE:20261125
+SUMMARY:Holiday All Day
+END:VEVENT
+BEGIN:VEVENT
+UID:oneoff-1
+DTSTART;TZID=Asia/Ho_Chi_Minh:20261124T140000
+DTEND;TZID=Asia/Ho_Chi_Minh:20261124T150000
+SUMMARY:One-off Sync
+END:VEVENT
+BEGIN:VEVENT
+UID:daily-1
+DTSTART;TZID=Asia/Ho_Chi_Minh:20261123T143000
+DTEND;TZID=Asia/Ho_Chi_Minh:20261123T150000
+RRULE:FREQ=DAILY;COUNT=4
+SUMMARY:Daily Standup
+END:VEVENT
+END:VCALENDAR
+"""
+        now = datetime(2026, 11, 24, 13, 45, tzinfo=tz_vn)
+        summary = parse_ics_for_date([("Work", ics_payload)], now=now, tz_name="Asia/Ho_Chi_Minh")
+
+        # 15m lead: triggers one-off (starts in 15m), ignores all-day and 14:30 recurring (45m away)
+        seen: set[str] = set()
+        due_15 = find_due_reminders(summary.events_today, now=now, minutes_before=15, notified_keys=seen)
+        self.assertEqual(len(due_15), 1)
+        self.assertEqual(due_15[0][1].title, "One-off Sync")
+        self.assertFalse(due_15[0][1].is_recurring)
+        self.assertEqual(due_15[0][2], 15)
+        seen.add(due_15[0][0])
+
+        # Deduplicates already notified event
+        self.assertEqual(find_due_reminders(summary.events_today, now=now, minutes_before=15, notified_keys=seen), [])
+
+        # Custom 45m lead picks up recurring event today; next day triggers a separate occurrence key
+        due_45 = find_due_reminders(summary.events_today, now=now, minutes_before=45, notified_keys=seen)
+        self.assertEqual(len(due_45), 1)
+        self.assertEqual(due_45[0][1].title, "Daily Standup")
+        self.assertTrue(due_45[0][1].is_recurring)
+        seen.add(due_45[0][0])
+
+        next_day_now = datetime(2026, 11, 25, 14, 20, tzinfo=tz_vn)
+        next_day_sum = parse_ics_for_date([("Work", ics_payload)], now=next_day_now, tz_name="Asia/Ho_Chi_Minh")
+        due_next = find_due_reminders(next_day_sum.events_today, now=next_day_now, minutes_before=15, notified_keys=seen)
+        self.assertEqual(len(due_next), 1)
+        self.assertEqual(due_next[0][1].title, "Daily Standup")
+        self.assertEqual(due_next[0][2], 10)
+
+    def test_custom_local_events_and_yearly_reminders(self) -> None:
+        from calendar_client import (
+            CalendarClient,
+            build_rrule_from_preset,
+            describe_repeat_options,
+            find_due_local_reminders,
+            local_events_to_ics,
+            parse_clock_time,
+        )
+
+        self.assertEqual(parse_clock_time("5:00PM"), (17, 0))
+        self.assertEqual(parse_clock_time("08:30"), (8, 30))
+
+        d_sample = date(2026, 12, 2)  # Wednesday, first Wednesday of Dec 2026
+        self.assertEqual(build_rrule_from_preset("yearly", d_sample), "FREQ=YEARLY;BYMONTH=12;BYMONTHDAY=2")
+        self.assertEqual(build_rrule_from_preset("monthly_nth", d_sample), "FREQ=MONTHLY;BYDAY=1WE")
+        self.assertEqual(build_rrule_from_preset("weekdays", d_sample), "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR")
+        self.assertEqual(
+            build_rrule_from_preset("custom", d_sample, custom_interval=2, custom_freq="WEEKLY", custom_weekdays=[0, 4]),
+            "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,FR",
+        )
+        opts_vi = dict(describe_repeat_options(d_sample, "vi"))
+        self.assertEqual(opts_vi["yearly"], "Hàng năm vào ngày 2 tháng 12")
+
+        local_ev = {
+            "id": "anniv-1",
+            "enabled": True,
+            "title": "Kỷ niệm đặc biệt",
+            "start_date": "2026-12-02",
+            "end_date": "2026-12-02",
+            "all_day": True,
+            "repeat": "yearly",
+            "rrule": "FREQ=YEARLY;BYMONTH=12;BYMONTHDAY=2",
+            "location": "Hồ Hoàn Kiếm, Hà Nội",
+            "notify_enabled": True,
+            "notify_value": 1,
+            "notify_unit": "days",
+            "notify_at": "5:00PM",
+        }
+        ics_str = local_events_to_ics([local_ev], tz_name="Asia/Ho_Chi_Minh")
+        self.assertIn("RRULE:FREQ=YEARLY;BYMONTH=12;BYMONTHDAY=2", ics_str)
+
+        # Even with 0 Google Calendar URLs, local events populate calendar summary & Map link
+        cal = CalendarClient().fetch([], tz_name="Asia/Ho_Chi_Minh", view_year=2026, view_month=12, local_events=[local_ev])
+        self.assertTrue(cal.has_urls)
+        dec2 = cal.events_by_date.get(date(2026, 12, 2), [])
+        self.assertEqual(len(dec2), 1)
+        self.assertEqual(dec2[0].location, "Hồ Hoàn Kiếm, Hà Nội")
+        self.assertTrue(any(lbl == "Mở Maps" for lbl, _ in extract_meeting_links(dec2[0], include_maps_for_address=True)))
+
+        # Yearly recurrence expands onto Dec 2, 2027 too
+        sum_2027 = parse_ics_for_date([("Personal", ics_str)], now=datetime(2027, 12, 2, 9, 0), tz_name="Asia/Ho_Chi_Minh", view_year=2027, view_month=12)
+        self.assertEqual(len(sum_2027.events_today), 1)
+
+        # Notification 1 day before 2026-12-02 at 5:00PM -> silent at 16:55, fires at 17:02
+        tz_vn = timezone(timedelta(hours=7))
+        seen: set[str] = set()
+        self.assertEqual(
+            find_due_local_reminders([local_ev], datetime(2026, 12, 1, 16, 55, tzinfo=tz_vn), "Asia/Ho_Chi_Minh", seen),
+            [],
+        )
+        due_1702 = find_due_local_reminders([local_ev], datetime(2026, 12, 1, 17, 2, tzinfo=tz_vn), "Asia/Ho_Chi_Minh", seen)
+        self.assertEqual(len(due_1702), 1)
+        self.assertEqual(due_1702[0][1].title, "Kỷ niệm đặc biệt")
+        self.assertTrue(due_1702[0][1].is_recurring)
+        seen.add(due_1702[0][0])
+        self.assertEqual(
+            find_due_local_reminders([local_ev], datetime(2026, 12, 1, 17, 5, tzinfo=tz_vn), "Asia/Ho_Chi_Minh", seen),
+            [],
+        )
+
+        # Multi-rule notifications on timed event: rule 0 (-1 day @ 5:00PM) + rule 1 (-15 min before 09:00)
+        multi_ev = {
+            "id": "multi-1",
+            "enabled": True,
+            "title": "Họp cuối năm",
+            "start_date": "2026-12-02",
+            "end_date": "2026-12-02",
+            "all_day": False,
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "repeat": "none",
+            "rrule": "",
+            "notifications": [
+                {"value": 1, "unit": "days", "at": "5:00PM"},
+                {"value": 15, "unit": "minutes", "at": "09:00"},
+            ],
+        }
+        seen_multi: set[str] = set()
+        due_m1 = find_due_local_reminders([multi_ev], datetime(2026, 12, 1, 17, 1, tzinfo=tz_vn), "Asia/Ho_Chi_Minh", seen_multi)
+        self.assertEqual(len(due_m1), 1)
+        seen_multi.add(due_m1[0][0])
+        due_m2 = find_due_local_reminders([multi_ev], datetime(2026, 12, 2, 8, 47, tzinfo=tz_vn), "Asia/Ho_Chi_Minh", seen_multi)
+        self.assertEqual(len(due_m2), 1)
+        self.assertEqual(due_m2[0][2], 13)
+
+    def test_modern_ui_helpers(self) -> None:
+        from modern_ui import format_pretty_date, get_dialog_theme, make_pill_dropdown, mousewheel_units
+
+        self.assertEqual(format_pretty_date(date(2026, 12, 2), "vi"), "2 thg 12, 2026")
+        self.assertEqual(format_pretty_date(date(2026, 12, 2), "en"), "Dec 2, 2026")
+        for st in ("macos", "pixel", "xiaomi", "serif", "botanical", "sans"):
+            for dk in (False, True):
+                pal = get_dialog_theme(st, dk)
+                self.assertEqual(pal.is_dark, dk)
+        self.assertEqual(get_dialog_theme("xiaomi", False).check_shape, "circle")
+        self.assertEqual(get_dialog_theme("macos", False).check_shape, "rounded")
+        self.assertTrue(callable(make_pill_dropdown))
+        self.assertEqual(mousewheel_units(0), 0)
+        self.assertEqual(mousewheel_units(120, platform="win32"), -1)
+        self.assertEqual(mousewheel_units(-240, platform="win32"), 2)
+        self.assertEqual(mousewheel_units(30, platform="win32"), -1)
+        self.assertEqual(mousewheel_units(1, platform="darwin"), -1)
+        self.assertEqual(mousewheel_units(-2, platform="darwin"), 2)
+        self.assertEqual(mousewheel_units(-8, platform="darwin"), 3)
+
+        from dateutil import tz as _tz
+        from weather_client import WORLD_TIMEZONES, geocode_city_with_tz
+
+        self.assertGreaterEqual(len(WORLD_TIMEZONES), 30)
+        for iana, label in WORLD_TIMEZONES:
+            self.assertIsNotNone(_tz.gettz(iana), f"Invalid IANA timezone: {iana}")
+            self.assertIn("UTC", label)
+        self.assertTrue(callable(geocode_city_with_tz))
+
+    def test_desktop_styles_and_placement(self) -> None:
+        now = datetime(2026, 11, 24, 13, 30)
+        cal = parse_ics_for_date([("Cá nhân", SAMPLE_ICS)], now=now, tz_name="Asia/Ho_Chi_Minh")
+        weather = WeatherData(
+            city="Hà Nội",
+            current_temp=25,
+            current_desc="Nắng nhẹ",
+            current_icon="partly",
+            today_min=20,
+            today_max=28,
+            today_rain_prob=10,
+            weekly=[DayForecast(now.date() + timedelta(days=i), "T3", 20, 28, 10, "sun", "Nắng") for i in range(7)],
+            fetched_at=now,
+        )
+        stats = SystemStats(38, 62, 14.2, 24.0, 22, "RTX 3050 Ti", 1024, 4096, 56.0, 51.0)
+        icon_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_icon.ico")
+        bg_sample = icon_p if os.path.exists(icon_p) else None
+
+        for st in ("macos", "pixel", "xiaomi"):
+            self.assertTrue(is_modern_desktop_style(st))
+            for mode in ("light", "dark"):
+                out, hits, _, th, cache = render_widget_cached(
+                    cal,
+                    weather,
+                    stats,
+                    style=st,
+                    theme_mode=mode,
+                    logo_path=bg_sample,
+                    bg_path=bg_sample,
+                    logo_pos="far_right" if st == "macos" else ("after_title" if st == "pixel" else "far_left"),
+                    bg_pos="bottom_right" if st == "xiaomi" else "left",
+                    now=now,
+                )
+                self.assertEqual(out.mode, "RGBA")
+                self.assertEqual(out.size, (480, 224))
+                self.assertEqual(th.style, st)
+                # Outer rounded corners are transparent, center area is opaque
+                self.assertEqual(out.getpixel((0, 0))[3], 0)
+                self.assertGreater(out.getpixel((240, 112))[3], 200)
+                self.assertTrue(any(h.action == "inspect_system" for h in hits))
+                # Verify fast 2s system patch keeps rounded corner alpha clean
+                patched, _, _ = patch_widget_system_stats(cache, stats, temp_unit="C", lang="vi")
+                self.assertEqual(patched.getpixel((0, 0))[3], 0)
+
+        # Verify bg_path="__none__" cleanly disables background image/watermark across paper & desktop styles
+        clean_paper, _, _, _, _ = render_widget_cached(cal, weather, stats, style="botanical", bg_path="__none__", now=now)
+        clean_mac, _, _, _, _ = render_widget_cached(cal, weather, stats, style="macos", bg_path="__none__", now=now)
+        self.assertEqual(clean_paper.size, (480, 224))
+        self.assertEqual(clean_mac.size, (480, 224))
+
+        # Verify background tone (original vs negative RGB inversion keeping alpha) & custom zoom/pan framing
+        from renderer import apply_bg_tone, compose_bg_layer
+        from PIL import Image as _Img
+
+        swatch = _Img.new("RGBA", (20, 10), (30, 60, 90, 128))
+        inv_swatch = apply_bg_tone(swatch, "negative")
+        self.assertEqual(inv_swatch.getpixel((5, 5)), (225, 195, 165, 128))
+        framed_layer = compose_bg_layer(swatch, 480, 224, pos="cover", zoom=1.35, offset_x=0.25, offset_y=-0.2, tone="negative")
+        self.assertEqual(framed_layer.size, (480, 224))
+        if bg_sample:
+            neg_card, _, _, _, _ = render_widget_cached(
+                cal,
+                weather,
+                stats,
+                style="botanical",
+                bg_path=bg_sample,
+                bg_tone="negative",
+                bg_zoom=1.25,
+                bg_offset_x=0.2,
+                bg_offset_y=-0.15,
+                bg_opacity=0.80,
+                now=now,
+            )
+            self.assertEqual(neg_card.size, (480, 224))
+            mac_vivid, _, _, _, _ = render_widget_cached(
+                cal,
+                weather,
+                stats,
+                style="macos",
+                bg_path=bg_sample,
+                bg_opacity=0.80,
+                now=now,
+            )
+            self.assertEqual(mac_vivid.size, (480, 224))
+        else:
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as td:
+                op_img_path = Path(td) / "opaque_bg.png"
+                _Img.new("RGB", (120, 80), (45, 95, 145)).save(op_img_path)
+                for st in ("botanical", "macos"):
+                    vivid_card, _, _, _, _ = render_widget_cached(
+                        cal,
+                        weather,
+                        stats,
+                        style=st,
+                        bg_path=str(op_img_path),
+                        bg_opacity=0.80,
+                        now=now,
+                    )
+                    self.assertEqual(vivid_card.size, (480, 224))
 
 
 if __name__ == "__main__":

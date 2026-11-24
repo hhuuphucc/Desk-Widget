@@ -398,8 +398,46 @@ class WeatherClient:
             )
 
 
-def geocode_city(query: str) -> tuple[str, float, float] | None:
-    """Resolve a city name to (display_name, lat, lon) using Open-Meteo Geocoding."""
+WORLD_TIMEZONES: list[tuple[str, str]] = [
+    ("Pacific/Midway", "(UTC-11:00) Midway / Pago Pago"),
+    ("Pacific/Honolulu", "(UTC-10:00) Honolulu (Hawaii)"),
+    ("America/Anchorage", "(UTC-09:00) Anchorage (Alaska)"),
+    ("America/Los_Angeles", "(UTC-08:00) Los Angeles / San Francisco"),
+    ("America/Denver", "(UTC-07:00) Denver / Phoenix"),
+    ("America/Chicago", "(UTC-06:00) Chicago / Mexico City"),
+    ("America/New_York", "(UTC-05:00) New York / Toronto"),
+    ("America/Santiago", "(UTC-04:00) Santiago / Halifax"),
+    ("America/St_Johns", "(UTC-03:30) St. John's (Newfoundland)"),
+    ("America/Sao_Paulo", "(UTC-03:00) São Paulo / Buenos Aires"),
+    ("Atlantic/South_Georgia", "(UTC-02:00) South Georgia"),
+    ("Atlantic/Azores", "(UTC-01:00) Azores / Cape Verde"),
+    ("Europe/London", "(UTC+00:00) London / Dublin / Lisbon"),
+    ("Europe/Paris", "(UTC+01:00) Paris / Berlin / Rome / Madrid"),
+    ("Europe/Athens", "(UTC+02:00) Athens / Cairo / Kyiv / Helsinki"),
+    ("Europe/Moscow", "(UTC+03:00) Moscow / Istanbul / Riyadh"),
+    ("Asia/Tehran", "(UTC+03:30) Tehran"),
+    ("Asia/Dubai", "(UTC+04:00) Dubai / Baku"),
+    ("Asia/Kabul", "(UTC+04:30) Kabul"),
+    ("Asia/Karachi", "(UTC+05:00) Karachi / Tashkent"),
+    ("Asia/Kolkata", "(UTC+05:30) Mumbai / New Delhi"),
+    ("Asia/Kathmandu", "(UTC+05:45) Kathmandu"),
+    ("Asia/Dhaka", "(UTC+06:00) Dhaka / Almaty"),
+    ("Asia/Yangon", "(UTC+06:30) Yangon"),
+    ("Asia/Ho_Chi_Minh", "(UTC+07:00) Hà Nội / TP.HCM (Việt Nam)"),
+    ("Asia/Bangkok", "(UTC+07:00) Bangkok / Jakarta"),
+    ("Asia/Singapore", "(UTC+08:00) Singapore / Taipei / Beijing / Hong Kong"),
+    ("Asia/Tokyo", "(UTC+09:00) Tokyo / Seoul"),
+    ("Australia/Adelaide", "(UTC+09:30) Adelaide / Darwin"),
+    ("Australia/Sydney", "(UTC+10:00) Sydney / Melbourne"),
+    ("Pacific/Noumea", "(UTC+11:00) Noumea / Solomon Islands"),
+    ("Pacific/Auckland", "(UTC+12:00) Auckland / Fiji"),
+    ("Pacific/Tongatapu", "(UTC+13:00) Tonga / Samoa"),
+    ("Pacific/Kiritimati", "(UTC+14:00) Kiritimati (Line Islands)"),
+]
+
+
+def geocode_city_with_tz(query: str) -> tuple[str, float, float, str | None] | None:
+    """Resolve a city name to (display_name, lat, lon, iana_timezone) using Open-Meteo Geocoding."""
     q = query.strip()
     if not q:
         return None
@@ -414,6 +452,17 @@ def geocode_city(query: str) -> tuple[str, float, float] | None:
         if not results:
             return None
         top = results[0]
-        return (top.get("name") or q, float(top["latitude"]), float(top["longitude"]))
+        raw_tz = str(top.get("timezone") or "").strip()
+        tz_id = raw_tz if (raw_tz and tz.gettz(raw_tz) is not None) else None
+        return (top.get("name") or q, float(top["latitude"]), float(top["longitude"]), tz_id)
     except Exception:
         return None
+
+
+def geocode_city(query: str) -> tuple[str, float, float] | None:
+    """Resolve a city name to (display_name, lat, lon) using Open-Meteo Geocoding."""
+    res = geocode_city_with_tz(query)
+    if res is None:
+        return None
+    name, lat, lon, _ = res
+    return (name, lat, lon)

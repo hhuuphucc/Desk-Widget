@@ -10,9 +10,11 @@ import requests
 
 APP_VERSION = "1.1.2"
 APP_AUTHOR = "hhuuphucc"
+APP_EMAIL = "hhuuphucc@gmail.com"
 APP_COPYRIGHT = "Copyright (c) 2026 hhuuphucc"
 APP_LICENSE = "MIT License"
 GITHUB_REPO = "hhuuphucc/Desk-Widget"
+GITHUB_PROFILE_URL = "https://github.com/hhuuphucc"
 REPO_URL = f"https://github.com/{GITHUB_REPO}"
 
 

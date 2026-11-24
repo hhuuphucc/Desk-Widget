@@ -41,6 +41,7 @@ When **`Auto-detect location & calendar timezone via IP`** is enabled in **Setti
 - **Cache & instant refresh:** Calendar data is cached for `15` minutes (`cache_minutes`); click **Right-click → `Refresh now`** whenever you want newly added meetings to show up immediately.
 - **Month switching `<` / `>`:** Navigating months in the `TODAY` mini-calendar recalculates instantly from the in-memory `.ics` payload cache (fast, zero extra network calls), including recurring events (`RRULE`) and all-day events.
 - **1-click popup links:** Clicking a day cell or truncated event row detects links inside event locations/descriptions — including `Zoom` (even `Meeting ID: ...` text fallback), `Google Meet`, `Teams`, `Discord`, `Zalo`, `Telegram`, `Messenger`, `Slack`, `Lark`, `Gather`, `Google Docs/Sheets/Slides/Forms/Drive`, `Notion`, `Figma`, `Canva`, `Miro`, `GitHub`, `GitLab`, `YouTube`, `Facebook`, and physical street addresses (creates a **Google Maps** search button).
+- **Pre-event Reminders & Custom Local Events:** Supports both automatic reminders for `.ics` timed events (`0–240` min before in **Settings**) and **Custom Reminders / Events** created directly in the app for **any date** (even days without Google Calendar events) — with All-day or timed hours, **Yearly / Monthly / Weekly / Daily / Weekdays / Custom** recurrence, **Location** (1-click **Open Maps**), and flexible alert lead time (`minutes / hours / days / weeks` before at `HH:MM`). For `.ics` feeds, external all-day entries are skipped intentionally unless added with a custom reminder time.
 
 ### 5. Real-Time System Monitor (`RAM / CPU / GPU & Temperature`)
 
@@ -110,6 +111,7 @@ Khi ô **`Tự động cập nhật vị trí & múi giờ lịch theo mạng IP
 - **Cache & đồng bộ ngay:** Dữ liệu lịch cache mặc định `15` phút; nếu vừa thêm lịch họp mới và muốn hiện ngay, bấm **Chuột phải → `Làm mới ngay`**.
 - **Đổi tháng `<` / `>`:** Bấm chuyển tháng trên lưới `HÔM NAY` xử lý tức thì từ cache `.ics` trong RAM (không phải tải lại mạng), hỗ trợ cả lịch lặp (`RRULE`) và sự kiện cả ngày.
 - **Nút mở nhanh trong popup sự kiện:** Khi bấm vào ngày hoặc sự kiện bị cắt chữ, app tự nhận diện link `Zoom` (kể cả dòng `Meeting ID: ...` không kèm URL), `Meet`, `Teams`, `Discord`, `Zalo`, `Telegram`, `Messenger`, `Slack`, `Lark`, `Gather`, `Google Docs/Sheets/Slides/Forms/Drive`, `Notion`, `Figma`, `Canva`, `Miro`, `GitHub`, `GitLab`, `YouTube`, `Facebook` và địa chỉ vật lý (tự tạo nút **Mở Maps**).
+- **Nhắc nhở & Tự tạo lịch cá nhân:** Hỗ trợ vừa tự nhắc sự kiện `.ics` có giờ cụ thể (`0–240` phút trong **Cài đặt**), vừa tự tạo **Sự kiện / Nhắc lịch cá nhân** cho **bất kỳ ngày nào** (kể cả ngày không có lịch Google) — chọn **Cả ngày** hoặc giờ cụ thể, lặp **Hàng năm / Hàng tháng / Hàng tuần / Hàng ngày / T2–T6 / Tùy chỉnh**, **Thêm vị trí** (tự gắn nút **Mở Maps**) và hẹn báo trước theo **phút / giờ / ngày / tuần** (`lúc HH:MM`). Sự kiện cả ngày từ `.ics` ngoài vẫn được bỏ qua mặc định để tránh báo nhầm nửa đêm.
 
 ### 5. Giám sát hệ thống Real-time (`RAM / CPU / GPU & Nhiệt độ`)
 

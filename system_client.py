@@ -332,13 +332,31 @@ def top_ram_processes(limit: int = 12) -> list[dict]:
     return ranked
 
 
-def top_cpu_processes(sample_sec: float = 0.8, limit: int = 12) -> list[dict]:
-    """Sample per-process CPU usage across logical cores via cpu_times snapshots."""
-    import os
+def top_cpu_processes(sample_sec: float = 1.5, limit: int = 12) -> list[dict]:
+    """Sample per-process CPU usage across logical cores while excluding profiler self-scan overhead."""
     cores = psutil.cpu_count(logical=True) or 1
     my_pid = os.getpid()
+    try:
+        self_proc = psutil.Process(my_pid)
+    except Exception:
+        self_proc = None
 
-    t0_map: dict[int, tuple[str, float]] = {}
+    def _self_cpu_total() -> float:
+        if self_proc is None:
+            return 0.0
+        try:
+            ct = self_proc.cpu_times()
+            return float(ct.user + ct.system)
+        except Exception:
+            return 0.0
+
+    if sample_sec >= 0.8:
+        # Let popup creation / click redraw settle before sampling t0
+        time.sleep(0.15)
+
+    scan_cpu_cost = 0.0
+    sc_a0 = _self_cpu_total()
+    t0_map: dict[int, tuple[str, float, float]] = {}
     for p in psutil.process_iter(["pid", "name", "cpu_times"]):
         try:
             pid = p.info["pid"]
@@ -348,34 +366,42 @@ def top_cpu_processes(sample_sec: float = 0.8, limit: int = 12) -> list[dict]:
             ct = p.info["cpu_times"]
             if ct is None:
                 continue
-            t0_map[pid] = (name, ct.user + ct.system)
+            t0_map[pid] = (name, ct.user + ct.system, time.perf_counter())
         except Exception:
             continue
+    scan_cpu_cost += max(0.0, _self_cpu_total() - sc_a0)
 
-    t_start = time.perf_counter()
-    time.sleep(sample_sec)
-    elapsed = max(0.05, time.perf_counter() - t_start)
+    time.sleep(max(0.1, float(sample_sec)))
 
-    grouped: dict[str, dict] = {}
+    sc_b0 = _self_cpu_total()
+    snaps_t1: list[tuple[int, str, float, float, float, float]] = []
     for p in psutil.process_iter(["pid", "name", "cpu_times"]):
         try:
             pid = p.info["pid"]
             if pid not in t0_map:
                 continue
-            name, prev_t = t0_map[pid]
+            name, prev_t, prev_wall = t0_map[pid]
             ct = p.info["cpu_times"]
             if ct is None:
                 continue
-            delta = max(0.0, (ct.user + ct.system) - prev_t)
-            pct = (delta / (elapsed * cores)) * 100.0
-            if pct <= 0.05:
-                continue
-            disp_name = f"{name} [Widget]" if pid == my_pid else name
-            entry = grouped.setdefault(disp_name, {"name": disp_name, "pct": 0.0, "count": 0})
-            entry["pct"] += pct
-            entry["count"] += 1
+            snaps_t1.append((pid, name, prev_t, prev_wall, ct.user + ct.system, time.perf_counter()))
         except Exception:
             continue
+    scan_cpu_cost += max(0.0, _self_cpu_total() - sc_b0)
+
+    grouped: dict[str, dict] = {}
+    for pid, name, prev_t, prev_wall, cur_t, cur_wall in snaps_t1:
+        elapsed = max(0.05, cur_wall - prev_wall)
+        delta = max(0.0, cur_t - prev_t)
+        if pid == my_pid:
+            delta = max(0.0, delta - scan_cpu_cost)
+        pct = (delta / (elapsed * cores)) * 100.0
+        if pct <= 0.05:
+            continue
+        disp_name = f"{name} [Widget]" if pid == my_pid else name
+        entry = grouped.setdefault(disp_name, {"name": disp_name, "pct": 0.0, "count": 0})
+        entry["pct"] += pct
+        entry["count"] += 1
 
     ranked = sorted(grouped.values(), key=lambda x: -x["pct"])[:limit]
     for item in ranked:

@@ -171,12 +171,264 @@ PAPER_SERIF_DARK = ThemePalette(
 # Backwards-compatible aliases
 LIGHT_ESL = MINIMAL_SANS_LIGHT
 DARK_ESL = MINIMAL_SANS_DARK
-BOTANICAL_LIGHT = ThemePalette(**{**PAPER_SERIF_LIGHT.__dict__, "style": "botanical"})
-BOTANICAL_DARK = ThemePalette(**{**PAPER_SERIF_DARK.__dict__, "style": "botanical"})
+BOTANICAL_LIGHT = ThemePalette(
+    is_dark=False,
+    style="botanical",
+    bezel="#EDF3F7",
+    bezel_border="#C0D3DF",
+    bezel_shadow="#A8BDCB",
+    paper="#F6FAFC",
+    ink="#18242C",
+    muted="#496170",
+    out_month="#7A909E",
+    track="#DCE7EE",
+    fill="#2B6E90",
+    accent="#2B6E90",
+    accent_dark="#173E54",
+    warn="#B5673B",
+    event_bg="#D8EAF4",
+    selected_bg="#C5DFEE",
+    today_bg="#E4F0F7",
+    btn_bg="#E8F1F6",
+    border_muted="#B7CBD8",
+    pill="#D8EAF4",
+    divider_soft="#D2E0E9",
+    card_border="#C2D4E0",
+)
+BOTANICAL_DARK = ThemePalette(
+    is_dark=True,
+    style="botanical",
+    bezel="#141D24",
+    bezel_border="#2B3B48",
+    bezel_shadow="#070C10",
+    paper="#0F171D",
+    ink="#E8F1F6",
+    muted="#9FB4C2",
+    out_month="#657B8A",
+    track="#1F2D37",
+    fill="#69B3D6",
+    accent="#69B3D6",
+    accent_dark="#D8EAF4",
+    warn="#D68F5E",
+    event_bg="#1D3748",
+    selected_bg="#27485D",
+    today_bg="#1B2B36",
+    btn_bg="#1C2832",
+    border_muted="#354857",
+    pill="#1D3748",
+    divider_soft="#23313D",
+    card_border="#2C3D4B",
+)
+
+# Modern Desktop Widget Presets (adapted for landscape desktop cards on Windows & macOS)
+MACOS_LIGHT = ThemePalette(
+    is_dark=False,
+    style="macos",
+    bezel="#ECEFF5",
+    bezel_border="#CBD4E1",
+    bezel_shadow="#AEB9C9",
+    paper="#E9EDF4",
+    ink="#1D1D1F",
+    muted="#515154",
+    out_month="#9A9EA6",
+    track="#E2E7F0",
+    fill="#007AFF",
+    accent="#007AFF",
+    accent_dark="#004999",
+    warn="#FF3B30",
+    event_bg="#DCEEFF",
+    selected_bg="#CCE4FF",
+    today_bg="#FFE5E5",
+    btn_bg="#F2F4F8",
+    border_muted="#C5D0E0",
+    pill="#DCEEFF",
+    divider_soft="#D7DFEC",
+    card_border="#C9D3E2",
+)
+
+MACOS_DARK = ThemePalette(
+    is_dark=True,
+    style="macos",
+    bezel="#1C1C1E",
+    bezel_border="#3A3A3C",
+    bezel_shadow="#0C0C0E",
+    paper="#1C1C1E",
+    ink="#F5F5F7",
+    muted="#AEAEB2",
+    out_month="#636366",
+    track="#3A3A3C",
+    fill="#0A84FF",
+    accent="#0A84FF",
+    accent_dark="#DCEEFF",
+    warn="#FF453A",
+    event_bg="#143D66",
+    selected_bg="#1E4D7B",
+    today_bg="#4D1E22",
+    btn_bg="#3A3A3C",
+    border_muted="#48484A",
+    pill="#143D66",
+    divider_soft="#38383A",
+    card_border="#3A3A3E",
+)
+
+PIXEL_LIGHT = ThemePalette(
+    is_dark=False,
+    style="pixel",
+    bezel="#F3EEF9",
+    bezel_border="#D8CCE8",
+    bezel_shadow="#B8AAD0",
+    paper="#F3EEF9",
+    ink="#1D1B20",
+    muted="#49454F",
+    out_month="#9C95A3",
+    track="#D7CFE5",
+    fill="#6750A4",
+    accent="#6750A4",
+    accent_dark="#21005D",
+    warn="#B3261E",
+    event_bg="#DFD2F6",
+    selected_bg="#EADDFF",
+    today_bg="#F3E5F5",
+    btn_bg="#E4DCF2",
+    border_muted="#C8BBE0",
+    pill="#EADDFF",
+    divider_soft="#D5CBE6",
+    card_border="#CEC1E2",
+)
+
+PIXEL_DARK = ThemePalette(
+    is_dark=True,
+    style="pixel",
+    bezel="#141218",
+    bezel_border="#3B3842",
+    bezel_shadow="#070609",
+    paper="#141218",
+    ink="#E6E0E9",
+    muted="#CAC4D0",
+    out_month="#686270",
+    track="#322E3D",
+    fill="#CBBFFF",
+    accent="#CBBFFF",
+    accent_dark="#EADDFF",
+    warn="#F2B8B5",
+    event_bg="#382C56",
+    selected_bg="#4F378B",
+    today_bg="#2B243C",
+    btn_bg="#2B2930",
+    border_muted="#49454F",
+    pill="#4F378B",
+    divider_soft="#363240",
+    card_border="#3B3842",
+)
+
+XIAOMI_LIGHT = ThemePalette(
+    is_dark=False,
+    style="xiaomi",
+    bezel="#F3F4F6",
+    bezel_border="#DCE0E6",
+    bezel_shadow="#B8BEC9",
+    paper="#F3F4F6",
+    ink="#191C22",
+    muted="#505662",
+    out_month="#9CA3B0",
+    track="#E5E8EE",
+    fill="#FF6900",
+    accent="#FF6900",
+    accent_dark="#9E3B00",
+    warn="#FF3B30",
+    event_bg="#FFE7D6",
+    selected_bg="#FFD7BA",
+    today_bg="#FFF1E6",
+    btn_bg="#EEF0F4",
+    border_muted="#D4D8E0",
+    pill="#FFE8D6",
+    divider_soft="#E2E5EB",
+    card_border="#D4D9E2",
+)
+
+XIAOMI_DARK = ThemePalette(
+    is_dark=True,
+    style="xiaomi",
+    bezel="#08090C",
+    bezel_border="#282D3A",
+    bezel_shadow="#020305",
+    paper="#08090C",
+    ink="#F4F6FA",
+    muted="#A5AEBF",
+    out_month="#5A6375",
+    track="#222733",
+    fill="#FF6900",
+    accent="#FF6900",
+    accent_dark="#FFD4B3",
+    warn="#FF5A36",
+    event_bg="#3D1F0D",
+    selected_bg="#592D12",
+    today_bg="#2A190E",
+    btn_bg="#1F242E",
+    border_muted="#323948",
+    pill="#4A240A",
+    divider_soft="#242936",
+    card_border="#282D3A",
+)
 
 
 def _is_paper(th: ThemePalette) -> bool:
     return th.style in ("serif", "botanical")
+
+
+def is_modern_desktop_style(style_or_theme: str | ThemePalette) -> bool:
+    st = style_or_theme.style if isinstance(style_or_theme, ThemePalette) else str(style_or_theme or "")
+    return st.strip().lower() in ("macos", "pixel", "xiaomi")
+
+
+def _modern_card_spec(th: ThemePalette) -> dict:
+    """Visual geometry & distinct Bento module palettes per desktop OS style."""
+    if th.style == "macos":
+        c = "#2C2C2E" if th.is_dark else "#FFFFFF"
+        b = "#3D3D40" if th.is_dark else "#D6DEE9"
+        return {
+            "outer_r": 18,
+            "inner_r": 12,
+            "bento_sys": c,
+            "bento_wx": c,
+            "bento_cal": c,
+            "bento_border": b,
+            "bar_ram": "#30D158" if th.is_dark else "#34C759",
+            "bar_cpu": "#0A84FF" if th.is_dark else "#007AFF",
+            "bar_gpu": "#BF5AF2" if th.is_dark else "#AF52DE",
+            "bar_high": "#FF453A" if th.is_dark else "#FF3B30",
+            "today_fill": "#FF453A" if th.is_dark else "#FF3B30",
+        }
+    if th.style == "xiaomi":
+        c = "#151821" if th.is_dark else "#FFFFFF"
+        b = "#262B38" if th.is_dark else "#E0E4EC"
+        return {
+            "outer_r": 16,
+            "inner_r": 13,
+            "bento_sys": c,
+            "bento_wx": c,
+            "bento_cal": c,
+            "bento_border": b,
+            "bar_ram": "#26C6DA" if th.is_dark else "#00A8E8",
+            "bar_cpu": "#FF7A1A" if th.is_dark else "#FF6900",
+            "bar_gpu": "#00D69F" if th.is_dark else "#00B578",
+            "bar_high": "#FF5A36" if th.is_dark else "#E63B1E",
+            "today_fill": "#FF6900",
+        }
+    # pixel (Material You expressive multi-pastel containers)
+    return {
+        "outer_r": 20,
+        "inner_r": 15,
+        "bento_sys": "#1B2821" if th.is_dark else "#E2F1E8",
+        "bento_wx": "#2C2018" if th.is_dark else "#FCECE0",
+        "bento_cal": "#211C30" if th.is_dark else "#EBE4F8",
+        "bento_border": "#363242" if th.is_dark else "#D8CEE8",
+        "bar_ram": "#76D8A4" if th.is_dark else "#1E7B55",
+        "bar_cpu": "#CBBFFF" if th.is_dark else "#6750A4",
+        "bar_gpu": "#FFB685" if th.is_dark else "#C2591A",
+        "bar_high": "#F2B8B5" if th.is_dark else "#B3261E",
+        "today_fill": "#6750A4" if not th.is_dark else "#8C6DE8",
+    }
 
 SCREEN_W = 480
 SCREEN_H = 224
@@ -240,7 +492,8 @@ def _load_circle_logo(
         return _CIRCLE_LOGO_CACHE[key]
 
     try:
-        im = ImageOps.exif_transpose(Image.open(p)).convert("RGBA")
+        with Image.open(p) as _raw_logo:
+            im = ImageOps.exif_transpose(_raw_logo).convert("RGBA")
         alpha_ext = im.getchannel("A").getextrema()
         has_alpha = alpha_ext[0] < 245
 
@@ -345,6 +598,109 @@ def _default_emblem_path(is_dark: bool) -> str:
     return path if os.path.exists(path) else ""
 
 
+def _bg_is_opaque_photo(bg_path: str | None) -> bool:
+    p = (bg_path or "").strip()
+    if not p or not os.path.exists(p):
+        return False
+    try:
+        with Image.open(p) as _raw:
+            im = _raw.convert("RGBA")
+            return im.getchannel("A").getextrema()[0] >= 245
+    except Exception:
+        return False
+
+
+def apply_bg_tone(im: Image.Image, tone: str = "original") -> Image.Image:
+    """Return RGBA image in either 'original' colors or RGB-inverted 'negative' preserving alpha."""
+    rgba = im.convert("RGBA")
+    if (tone or "original").strip().lower() != "negative":
+        return rgba
+    r, g, b, a = rgba.split()
+    inv_rgb = ImageOps.invert(Image.merge("RGB", (r, g, b)))
+    ir, ig, ib = inv_rgb.split()
+    return Image.merge("RGBA", (ir, ig, ib, a))
+
+
+def compose_bg_layer(
+    im: Image.Image,
+    cw: int,
+    ch: int,
+    pos: str = "cover",
+    zoom: float = 1.0,
+    offset_x: float = 0.0,
+    offset_y: float = 0.0,
+    tone: str = "original",
+    div_x_px: int | None = None,
+    center_y_px: int | None = None,
+    emblem_size: int | None = None,
+    alpha_scale: float = 1.0,
+) -> Image.Image:
+    """Compose a scaled, panned, tone-adjusted RGBA background layer at exact widget ratio (cw x ch)."""
+    rgba = apply_bg_tone(im, tone=tone)
+    has_alpha = rgba.getchannel("A").getextrema()[0] < 245
+    z = max(0.35, min(3.0, float(zoom)))
+    ox = max(-1.5, min(1.5, float(offset_x)))
+    oy = max(-1.5, min(1.5, float(offset_y)))
+    p_norm = (pos or "cover").strip().lower()
+    layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+
+    if has_alpha:
+        base_em = emblem_size if emblem_size is not None else int(round(ch * 0.68))
+        target_sz = max(8, int(round((base_em * 0.72 if p_norm == "bottom_right" else base_em) * z)))
+        emblem = ImageOps.contain(rgba, (target_sz, target_sz), Image.Resampling.LANCZOS)
+        dx_base = (div_x_px if div_x_px is not None else cw // 2)
+        cy_base = (center_y_px if center_y_px is not None else ch // 2)
+        if p_norm == "left":
+            ex = max(6, dx_base // 2 - emblem.width // 2)
+            ey = cy_base - emblem.height // 2
+        elif p_norm == "right":
+            ex = dx_base + max(8, (cw - dx_base - emblem.width) // 2)
+            ey = cy_base - emblem.height // 2
+        elif p_norm == "top":
+            ex = dx_base - emblem.width // 2
+            ey = max(8, int(round(ch * 0.14)))
+        elif p_norm == "bottom":
+            ex = dx_base - emblem.width // 2
+            ey = max(8, ch - emblem.height - int(round(ch * 0.06)))
+        elif p_norm == "bottom_right":
+            ex = max(8, cw - emblem.width - int(round(cw * 0.03)))
+            ey = max(8, ch - emblem.height - int(round(ch * 0.04)))
+        else:
+            ex = dx_base - emblem.width // 2
+            ey = cy_base - emblem.height // 2
+        ex = int(round(ex + ox * (cw * 0.5)))
+        ey = int(round(ey + oy * (ch * 0.5)))
+        if alpha_scale < 0.999:
+            emblem.putalpha(emblem.getchannel("A").point(lambda a: int(round(a * alpha_scale))))
+        layer.paste(emblem, (ex, ey), emblem)
+        return layer
+
+    if p_norm == "bottom_right" and abs(z - 1.0) < 0.01 and abs(ox) < 0.01 and abs(oy) < 0.01:
+        box_w = max(40, int(round(cw * 0.28)))
+        box_h = max(30, int(round(ch * 0.44)))
+        fitted = ImageOps.fit(rgba, (box_w, box_h), Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+        if alpha_scale < 0.999:
+            fitted.putalpha(fitted.getchannel("A").point(lambda a: int(round(a * alpha_scale))))
+        px = max(6, cw - box_w - int(round(cw * 0.02)))
+        py = max(6, ch - box_h - int(round(ch * 0.03)))
+        layer.paste(fitted, (px, py))
+        return layer
+
+    w, h = rgba.size
+    base_scale = max(cw / max(1, w), ch / max(1, h))
+    nw = max(1, int(round(w * base_scale * z)))
+    nh = max(1, int(round(h * base_scale * z)))
+    fitted = rgba.resize((nw, nh), Image.Resampling.LANCZOS)
+    if alpha_scale < 0.999:
+        fitted.putalpha(fitted.getchannel("A").point(lambda a: int(round(a * alpha_scale))))
+    fx = 0.0 if p_norm == "left" else (1.0 if p_norm == "right" else 0.5)
+    fy = 0.0 if p_norm == "top" else (1.0 if p_norm == "bottom" else 0.5)
+    dx = int(round((cw - nw) * fx + ox * (cw * 0.5)))
+    dy = int(round((ch - nh) * fy + oy * (ch * 0.5)))
+    layer.paste(fitted, (dx, dy))
+    return layer
+
+
 def _apply_widget_background(
     canvas: Image.Image,
     bg_path: str | None,
@@ -352,47 +708,68 @@ def _apply_widget_background(
     center_y_px: int,
     emblem_size: int,
     is_dark: bool,
+    bg_pos: str = "cover",
+    outer_mask: Image.Image | None = None,
+    photo_alpha: float | None = None,
+    emblem_alpha: float | None = None,
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
 ) -> str:
-    """Composite custom or local theme background onto widget card; return active image path."""
+    """Composite custom or local theme background onto widget card with selectable placement, crop & tone."""
     chosen = (bg_path or "").strip()
     path = chosen if (chosen and os.path.exists(chosen)) else _default_emblem_path(is_dark)
     if not path:
         return ""
+    pos = (bg_pos or "cover").strip().lower()
+    if pos not in ("cover", "center", "top", "bottom", "left", "right", "bottom_right"):
+        pos = "cover"
+    t_norm = "negative" if (bg_tone or "original").strip().lower() == "negative" else "original"
+    z_clamped = max(0.35, min(3.0, float(bg_zoom)))
+    ox_clamped = max(-1.5, min(1.5, float(bg_offset_x)))
+    oy_clamped = max(-1.5, min(1.5, float(bg_offset_y)))
     try:
         mtime_ns = os.stat(path).st_mtime_ns
-        key = (f"bg:{path}:{mtime_ns}", canvas.width if False else emblem_size, int(is_dark))
-        im = ImageOps.exif_transpose(Image.open(path)).convert("RGBA")
+        cw, ch = canvas.size
+        with Image.open(path) as _raw_bg:
+            im = ImageOps.exif_transpose(_raw_bg).convert("RGBA")
         has_alpha = im.getchannel("A").getextrema()[0] < 245
-
         if has_alpha:
-            if key in _EMBLEM_CACHE:
-                emblem = _EMBLEM_CACHE[key]
-            else:
-                alpha_scale = 0.56 if not is_dark else 0.58
-                emblem = ImageOps.contain(im, (emblem_size, emblem_size), Image.Resampling.LANCZOS)
-                if alpha_scale < 0.99:
-                    alpha = emblem.getchannel("A").point(lambda p: int(p * alpha_scale))
-                    emblem.putalpha(alpha)
-                if len(_EMBLEM_CACHE) > 12:
-                    _EMBLEM_CACHE.clear()
-                _EMBLEM_CACHE[key] = emblem
-            ex = div_x_px - emblem.width // 2
-            ey = center_y_px - emblem.height // 2
-            canvas.alpha_composite(emblem, (ex, ey))
+            alpha_scale = (0.56 if not is_dark else 0.58) if emblem_alpha is None else float(emblem_alpha)
+        elif pos == "bottom_right" and abs(z_clamped - 1.0) < 0.01 and abs(ox_clamped) < 0.01 and abs(oy_clamped) < 0.01:
+            alpha_scale = (0.28 if not is_dark else 0.24) if photo_alpha is None else float(photo_alpha)
         else:
-            # Opaque wallpaper/photo: subtle soft full-card watermark preserving crisp text readability
-            cw, ch = canvas.size
-            w, h = im.size
-            scale_cov = max(cw / max(1, w), ch / max(1, h))
-            nw, nh = int(round(w * scale_cov)), int(round(h * scale_cov))
-            fitted = im.resize((nw, nh), Image.Resampling.LANCZOS)
-            lx = (nw - cw) // 2
-            ly = (nh - ch) // 2
-            fitted = fitted.crop((lx, ly, lx + cw, ly + ch))
-            alpha_scale = 0.20 if not is_dark else 0.18
-            alpha = fitted.getchannel("A").point(lambda p: int(p * alpha_scale))
-            fitted.putalpha(alpha)
-            canvas.alpha_composite(fitted, (0, 0))
+            alpha_scale = (0.20 if not is_dark else 0.18) if photo_alpha is None else float(photo_alpha)
+
+        key = (
+            f"bg:{path}:{mtime_ns}:{pos}:{t_norm}:{z_clamped:.3f}:{ox_clamped:.3f}:{oy_clamped:.3f}:{alpha_scale:.2f}:{cw}x{ch}",
+            emblem_size,
+            int(is_dark),
+        )
+        if key in _EMBLEM_CACHE:
+            layer = _EMBLEM_CACHE[key].copy()
+        else:
+            layer = compose_bg_layer(
+                im,
+                cw,
+                ch,
+                pos=pos,
+                zoom=z_clamped,
+                offset_x=ox_clamped,
+                offset_y=oy_clamped,
+                tone=t_norm,
+                div_x_px=div_x_px,
+                center_y_px=center_y_px,
+                emblem_size=emblem_size,
+                alpha_scale=alpha_scale,
+            )
+            if len(_EMBLEM_CACHE) > 12:
+                _EMBLEM_CACHE.clear()
+            _EMBLEM_CACHE[key] = layer.copy()
+        if outer_mask is not None:
+            layer.putalpha(Image.composite(layer.getchannel("A"), Image.new("L", (cw, ch), 0), outer_mask))
+        canvas.alpha_composite(layer, (0, 0))
         return path
     except Exception:
         return ""
@@ -467,6 +844,12 @@ def resolve_theme(
         return MINIMAL_SANS_DARK if is_dark else MINIMAL_SANS_LIGHT
     if st == "botanical":
         return BOTANICAL_DARK if is_dark else BOTANICAL_LIGHT
+    if st == "macos":
+        return MACOS_DARK if is_dark else MACOS_LIGHT
+    if st == "pixel":
+        return PIXEL_DARK if is_dark else PIXEL_LIGHT
+    if st == "xiaomi":
+        return XIAOMI_DARK if is_dark else XIAOMI_LIGHT
     return PAPER_SERIF_DARK if is_dark else PAPER_SERIF_LIGHT
 
 
@@ -722,7 +1105,21 @@ def _draw_fineline_rule(
 
 
 def _draw_section_glyph(draw: ImageDraw.ImageDraw, x: int, y: int, th: ThemePalette) -> None:
-    """Header glyph for the system column (sun/moon in serif paper mode, chip in sans mode)."""
+    """Header glyph for the system column (capsule badge in desktop card styles, sun/moon in paper, chip in sans)."""
+    if is_modern_desktop_style(th):
+        spec = _modern_card_spec(th)
+        cx, cy = x + 6, y + 6
+        if th.style == "macos":
+            draw.rounded_rectangle((x + 1, y + 1, x + 11, y + 11), radius=3, fill=th.accent)
+            draw.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill="#FFFFFF")
+        elif th.style == "xiaomi":
+            draw.rounded_rectangle((x + 1, y + 2, x + 11, y + 10), radius=4, fill=spec["bar_cpu"])
+            draw.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill="#FFFFFF")
+        else:
+            draw.ellipse((x + 1, y + 1, x + 11, y + 11), fill=th.event_bg, outline=th.accent, width=1)
+            draw.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill=th.accent)
+        return
+
     if not _is_paper(th):
         draw.rectangle((x + 2, y + 2, x + 10, y + 10), fill=th.accent)
         draw.rectangle((x + 4, y + 4, x + 8, y + 8), fill=th.paper)
@@ -780,7 +1177,29 @@ def _draw_weather_icon(draw: ImageDraw.ImageDraw, x: int, y: int, kind: str, th:
         draw.rounded_rectangle((x + 1, y + 4, x + 12, y + 10), radius=3, fill=th.ink)
 
 
-def _draw_progress_bar(draw: ImageDraw.ImageDraw, x: int, y: int, w: int, h: int, pct: int, th: ThemePalette) -> None:
+def _draw_progress_bar(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    pct: int,
+    th: ThemePalette,
+    role: str = "cpu",
+) -> None:
+    if is_modern_desktop_style(th):
+        spec = _modern_card_spec(th)
+        bar_y = y + 1
+        bar_h = 7 if th.style in ("pixel", "xiaomi") else 5
+        rad = bar_h / 2.0
+        draw.rounded_rectangle((x, bar_y, x + w, bar_y + bar_h), radius=rad, fill=th.track)
+        fill_w = max(0, int(w * (pct / 100.0)))
+        if fill_w > 0:
+            role_key = f"bar_{role}" if f"bar_{role}" in spec else "bar_cpu"
+            bar_color = spec["bar_high"] if pct >= 85 else spec[role_key]
+            draw.rounded_rectangle((x, bar_y, max(x + bar_h, x + fill_w), bar_y + bar_h), radius=rad, fill=bar_color)
+        return
+
     if _is_paper(th):
         bar_y = y + 1
         bar_h = 4
@@ -815,28 +1234,53 @@ def _draw_inline_month_grid(
     lang: str = "vi",
 ) -> None:
     is_en = (lang or "vi").strip().lower() == "en"
-    _draw_fineline_rule(draw, rx, top_y, rx + rw, top_y, th.divider_soft, th.accent, with_dots=_is_paper(th))
+    is_modern = is_modern_desktop_style(th)
+    if is_modern:
+        draw.line((rx, top_y, rx + rw, top_y), fill=th.divider_soft, width=1)
+    else:
+        _draw_fineline_rule(draw, rx, top_y, rx + rw, top_y, th.divider_soft, th.accent, with_dots=_is_paper(th))
 
     nav_y = top_y + 4
-    draw.rectangle((rx, nav_y, rx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
-    draw.text((rx + 4, nav_y - 1), "<", font=f.small_bold, fill=th.ink)
-    hits.append(HitRegion(rx, nav_y, rx + 16, nav_y + 14, "prev_month"))
+    if is_modern:
+        draw.rounded_rectangle((rx, nav_y, rx + 18, nav_y + 15), radius=5, fill=th.btn_bg)
+        draw.text((rx + 5, nav_y - 1), "<", font=f.small_bold, fill=th.ink)
+        hits.append(HitRegion(rx, nav_y, rx + 18, nav_y + 15, "prev_month"))
 
-    nx = rx + rw - 16
-    draw.rectangle((nx, nav_y, nx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
-    draw.text((nx + 4, nav_y - 1), ">", font=f.small_bold, fill=th.ink)
-    hits.append(HitRegion(nx, nav_y, nx + 16, nav_y + 14, "next_month"))
+        nx = rx + rw - 18
+        draw.rounded_rectangle((nx, nav_y, nx + 18, nav_y + 15), radius=5, fill=th.btn_bg)
+        draw.text((nx + 5, nav_y - 1), ">", font=f.small_bold, fill=th.ink)
+        hits.append(HitRegion(nx, nav_y, nx + 18, nav_y + 15, "next_month"))
 
-    if view_year != today.year or view_month != today.month:
-        btn_lbl = "Today" if is_en else "H.nay"
-        tx = nx - 40
-        draw.rectangle((tx, nav_y, tx + 36, nav_y + 14), fill=th.btn_bg, outline=th.border_muted, width=1)
-        bw = _text_width(draw, btn_lbl, f.small_bold)
-        draw.text((tx + max(2, (36 - bw) // 2), nav_y), btn_lbl, font=f.small_bold, fill=th.accent)
-        hits.append(HitRegion(tx, nav_y, tx + 36, nav_y + 14, "goto_today"))
-        title_end_x = tx - 4
+        if view_year != today.year or view_month != today.month:
+            btn_lbl = "Today" if is_en else "H.nay"
+            tx = nx - 42
+            draw.rounded_rectangle((tx, nav_y, tx + 38, nav_y + 15), radius=6, fill=th.pill)
+            bw = _text_width(draw, btn_lbl, f.small_bold)
+            draw.text((tx + max(2, (38 - bw) // 2), nav_y), btn_lbl, font=f.small_bold, fill=th.accent)
+            hits.append(HitRegion(tx, nav_y, tx + 38, nav_y + 15, "goto_today"))
+            title_end_x = tx - 4
+        else:
+            title_end_x = nx - 4
     else:
-        title_end_x = nx - 4
+        draw.rectangle((rx, nav_y, rx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
+        draw.text((rx + 4, nav_y - 1), "<", font=f.small_bold, fill=th.ink)
+        hits.append(HitRegion(rx, nav_y, rx + 16, nav_y + 14, "prev_month"))
+
+        nx = rx + rw - 16
+        draw.rectangle((nx, nav_y, nx + 16, nav_y + 14), fill=th.paper, outline=th.border_muted, width=1)
+        draw.text((nx + 4, nav_y - 1), ">", font=f.small_bold, fill=th.ink)
+        hits.append(HitRegion(nx, nav_y, nx + 16, nav_y + 14, "next_month"))
+
+        if view_year != today.year or view_month != today.month:
+            btn_lbl = "Today" if is_en else "H.nay"
+            tx = nx - 40
+            draw.rectangle((tx, nav_y, tx + 36, nav_y + 14), fill=th.btn_bg, outline=th.border_muted, width=1)
+            bw = _text_width(draw, btn_lbl, f.small_bold)
+            draw.text((tx + max(2, (36 - bw) // 2), nav_y), btn_lbl, font=f.small_bold, fill=th.accent)
+            hits.append(HitRegion(tx, nav_y, tx + 36, nav_y + 14, "goto_today"))
+            title_end_x = tx - 4
+        else:
+            title_end_x = nx - 4
 
     month_title = f"{pycal.month_name[view_month]} {view_year}" if is_en else f"Tháng {view_month:02d}/{view_year}"
     tw = _text_width(draw, month_title, f.cal_title)
@@ -850,7 +1294,7 @@ def _draw_inline_month_grid(
     for idx, wd in enumerate(weekdays):
         cx = grid_x + idx * col_w
         wd_w = _text_width(draw, wd, f.small_bold)
-        color = th.accent if idx >= 5 else th.muted
+        color = (th.warn if th.style == "xiaomi" else th.accent) if idx >= 5 else th.muted
         draw.text((cx + (col_w - wd_w) // 2, wy), wd, font=f.small_bold, fill=color)
 
     cal_matrix = pycal.Calendar(firstweekday=0).monthdatescalendar(view_year, view_month)
@@ -882,24 +1326,47 @@ def _draw_inline_month_grid(
                 fill_c = th.selected_bg
 
             if is_today:
-                outline_c = th.ink
+                if is_modern:
+                    spec_m = _modern_card_spec(th)
+                    if th.style == "macos":
+                        fill_c = spec_m["today_fill"]
+                        outline_c = spec_m["today_fill"]
+                        txt_c = "#FFFFFF"
+                    elif th.style == "xiaomi":
+                        fill_c = spec_m["today_fill"] if is_selected else th.today_bg
+                        outline_c = spec_m["today_fill"]
+                        if is_selected:
+                            txt_c = "#FFFFFF"
+                    else:
+                        fill_c = spec_m["today_fill"]
+                        outline_c = spec_m["today_fill"]
+                        txt_c = "#FFFFFF"
+                else:
+                    outline_c = th.ink
                 outline_w = 1
                 font_use = f.cal_day_bold
 
-            if is_selected:
+            if is_selected and not (is_modern and is_today):
                 outline_c = th.accent
                 outline_w = 2
                 font_use = f.cal_day_bold
 
             if fill_c or outline_c:
-                draw.rectangle((x1, y1, x2, y2), fill=fill_c, outline=outline_c, width=outline_w)
+                if is_modern:
+                    rad_d = 7 if th.style in ("pixel", "macos") else 4
+                    draw.rounded_rectangle((x1, y1, x2, y2), radius=rad_d, fill=fill_c, outline=outline_c, width=outline_w)
+                else:
+                    draw.rectangle((x1, y1, x2, y2), fill=fill_c, outline=outline_c, width=outline_w)
 
             d_txt = str(d_obj.day)
             dw = _text_width(draw, d_txt, font_use)
             draw.text((x1 + (x2 - x1 - dw) // 2, y1 - 1), d_txt, font=font_use, fill=txt_c)
 
             if in_month and len(day_events) > 1:
-                draw.rectangle((x2 - 4, y2 - 4, x2 - 2, y2 - 2), fill=th.accent)
+                if is_modern:
+                    draw.ellipse((x2 - 5, y2 - 4, x2 - 2, y2 - 1), fill=th.accent)
+                else:
+                    draw.rectangle((x2 - 4, y2 - 4, x2 - 2, y2 - 2), fill=th.accent)
 
             hits.append(HitRegion(x1, y1, x2, y2, "select_date", d_obj))
 
@@ -976,14 +1443,14 @@ def _draw_system_section(
     ram_pct_txt = f"{system_stats.ram_pct}%"
     draw.text((lx, y_ram), ram_lbl, font=f.label, fill=th.ink)
     draw.text((lx + lw - _text_width(draw, ram_pct_txt, f.pct), y_ram), ram_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_ram + 15, lw, 6, system_stats.ram_pct, th)
+    _draw_progress_bar(draw, lx, y_ram + 15, lw, 6, system_stats.ram_pct, th, role="ram")
     hits.append(HitRegion(lx, y_ram, lx + lw, y_ram + 22, "inspect_system", "ram"))
 
     y_cpu = 72
     cpu_pct_txt = f"{system_stats.cpu_pct}%"
     draw.text((lx, y_cpu), "CPU", font=f.label, fill=th.ink)
     draw.text((lx + lw - _text_width(draw, cpu_pct_txt, f.pct), y_cpu), cpu_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_cpu + 15, lw, 6, system_stats.cpu_pct, th)
+    _draw_progress_bar(draw, lx, y_cpu + 15, lw, 6, system_stats.cpu_pct, th, role="cpu")
     hits.append(HitRegion(lx, y_cpu, lx + lw, y_cpu + 22, "inspect_system", "cpu"))
 
     y_gpu = 98
@@ -1002,7 +1469,7 @@ def _draw_system_section(
         gpu_val = 0
     draw.text((lx, y_gpu), gpu_lbl, font=f.label, fill=th.ink)
     draw.text((lx + lw - _text_width(draw, gpu_pct_txt, f.pct), y_gpu), gpu_pct_txt, font=f.pct, fill=th.ink)
-    _draw_progress_bar(draw, lx, y_gpu + 15, lw, 6, gpu_val, th)
+    _draw_progress_bar(draw, lx, y_gpu + 15, lw, 6, gpu_val, th, role="gpu")
     hits.append(HitRegion(lx, y_gpu, lx + lw, y_gpu + 22, "inspect_system", "gpu"))
 
 
@@ -1022,7 +1489,10 @@ def _draw_meeting_pill(
     y1 = y
     x2 = right_x
     y2 = y + 14
-    draw.rectangle((x1, y1, x2, y2), fill=th.accent, outline=th.accent_dark, width=1)
+    if is_modern_desktop_style(th):
+        draw.rounded_rectangle((x1, y1, x2, y2), radius=5, fill=th.accent)
+    else:
+        draw.rectangle((x1, y1, x2, y2), fill=th.accent, outline=th.accent_dark, width=1)
     draw.text((x1 + 5, y1 + 1), label, font=f.tiny_bold, fill="#FFFFFF")
     hits.append(HitRegion(x1, y1, x2, y2, "open_url", url))
     return btn_w + 5
@@ -1046,6 +1516,13 @@ def _render_screen_hires(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
+    logo_pos: str = "before_title",
+    bg_pos: str = "cover",
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
+    bg_opacity: float | None = None,
 ) -> tuple[Image.Image, list[HitRegion], ThemePalette, Image.Image, Fonts, int]:
     """Render screen internally at `ss`x supersampled resolution (logical 480x224 coords)."""
     if now is None:
@@ -1059,20 +1536,132 @@ def _render_screen_hires(
     div_x = 202
     s = max(1, int(ss))
     cw, ch = SCREEN_W * s, SCREEN_H * s
+    is_modern = is_modern_desktop_style(th)
 
-    if _is_paper(th):
+    active_bg_path = ""
+    outer_mask: Image.Image | None = None
+    no_bg = str(bg_path or "").strip().lower() == "__none__"
+    eff_bg_path = None if no_bg else bg_path
+    is_opaque_bg = (not no_bg) and _bg_is_opaque_photo(eff_bg_path)
+    opaque_user_bg = is_modern and is_opaque_bg
+    eff_op = max(0.10, min(1.0, float(bg_opacity))) if bg_opacity is not None else None
+    if is_modern:
+        spec = _modern_card_spec(th)
+        outer_r = int(round(spec["outer_r"] * s))
+        outer_mask = Image.new("L", (cw, ch), 0)
+        ImageDraw.Draw(outer_mask).rounded_rectangle((0, 0, cw - 1, ch - 1), radius=outer_r, fill=255)
+        img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        shell_layer = Image.new("RGBA", (cw, ch), (*_hex_to_rgb(th.paper), 255))
+        img.paste(shell_layer, (0, 0), outer_mask)
+        if opaque_user_bg:
+            active_bg_path = _apply_widget_background(
+                img,
+                eff_bg_path,
+                div_x * s,
+                127 * s,
+                154 * s,
+                th.is_dark,
+                bg_pos=bg_pos,
+                outer_mask=outer_mask,
+                photo_alpha=(eff_op if eff_op is not None else 0.80),
+                bg_tone=bg_tone,
+                bg_zoom=bg_zoom,
+                bg_offset_x=bg_offset_x,
+                bg_offset_y=bg_offset_y,
+            )
+    elif _is_paper(th):
         img = _get_paper_texture(cw, ch, th).copy()
-        active_bg_path = _apply_widget_background(img, bg_path, div_x * s, 127 * s, 154 * s, th.is_dark)
+        if not no_bg:
+            active_bg_path = _apply_widget_background(
+                img,
+                eff_bg_path,
+                div_x * s,
+                127 * s,
+                154 * s,
+                th.is_dark,
+                bg_pos=bg_pos,
+                photo_alpha=eff_op,
+                emblem_alpha=eff_op,
+                bg_tone=bg_tone,
+                bg_zoom=bg_zoom,
+                bg_offset_x=bg_offset_x,
+                bg_offset_y=bg_offset_y,
+            )
     else:
         img = Image.new("RGBA", (cw, ch), th.paper)
-        active_bg_path = _apply_widget_background(img, bg_path, div_x * s, 127 * s, 154 * s, th.is_dark) if bg_path else ""
+        if not no_bg:
+            active_bg_path = _apply_widget_background(
+                img,
+                eff_bg_path,
+                div_x * s,
+                127 * s,
+                154 * s,
+                th.is_dark,
+                bg_pos=bg_pos,
+                photo_alpha=eff_op,
+                emblem_alpha=eff_op,
+                bg_tone=bg_tone,
+                bg_zoom=bg_zoom,
+                bg_offset_x=bg_offset_x,
+                bg_offset_y=bg_offset_y,
+            )
+
+    if (not is_modern) and is_opaque_bg and eff_op is not None and eff_op > 0.25:
+        # Frosted readability scrim behind text zones so vivid wallpapers never hurt legibility
+        scrim_a = max(0, min(162, int(round((eff_op - 0.18) * 190))))
+        if scrim_a > 0:
+            s_layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+            s_draw = _ScaledDraw(ImageDraw.Draw(s_layer), scale=float(s))
+            s_fill = (*_hex_to_rgb(th.paper), scrim_a)
+            s_draw.rounded_rectangle((6, 2, SCREEN_W - 7, 23), radius=6, fill=s_fill)
+            s_draw.rounded_rectangle((6, 28, div_x - 5, SCREEN_H - 5), radius=8, fill=s_fill)
+            s_draw.rounded_rectangle((div_x + 5, 28, SCREEN_W - 7, SCREEN_H - 5), radius=8, fill=s_fill)
+            img.alpha_composite(s_layer, (0, 0))
 
     draw = _ScaledDraw(ImageDraw.Draw(img), scale=float(s))
     f = Fonts(style=th.style, scale=float(s))
     hits: list[HitRegion] = []
 
-    # Subtle outer frame for paper card
-    if _is_paper(th):
+    if is_modern:
+        spec = _modern_card_spec(th)
+        if opaque_user_bg:
+            b_alpha = max(132, min(202, int(round(124 + 74 * (eff_op if eff_op is not None else 0.80)))))
+        else:
+            b_alpha = 255
+        b_out = (*_hex_to_rgb(spec["bento_border"]), 255)
+        b_layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        b_draw = _ScaledDraw(ImageDraw.Draw(b_layer), scale=float(s))
+        if opaque_user_bg:
+            hdr_fill = (*_hex_to_rgb(th.paper), max(138, min(206, b_alpha)))
+            b_draw.rounded_rectangle((4, 2, SCREEN_W - 5, 24), radius=9, fill=hdr_fill)
+        for (bx1, by1, bx2, by2), b_key in (
+            ((5, 27, 199, 125), "bento_sys"),
+            ((5, 129, 199, 219), "bento_wx"),
+            ((204, 27, 475, 219), "bento_cal"),
+        ):
+            b_fill = (*_hex_to_rgb(spec[b_key]), b_alpha)
+            b_draw.rounded_rectangle((bx1, by1, bx2, by2), radius=spec["inner_r"], fill=b_fill, outline=b_out, width=1)
+        img.alpha_composite(b_layer, (0, 0))
+        if not opaque_user_bg and not no_bg:
+            # Render transparent PNG custom background or default watermark smoothly above Bento surface
+            def_em_a = 0.52 if (eff_bg_path and os.path.exists(str(eff_bg_path))) else 0.36
+            active_bg_path = _apply_widget_background(
+                img,
+                eff_bg_path,
+                div_x * s,
+                127 * s,
+                154 * s,
+                th.is_dark,
+                bg_pos=bg_pos,
+                outer_mask=outer_mask,
+                emblem_alpha=(eff_op if (eff_op is not None and eff_bg_path and os.path.exists(str(eff_bg_path))) else def_em_a),
+                bg_tone=bg_tone,
+                bg_zoom=bg_zoom,
+                bg_offset_x=bg_offset_x,
+                bg_offset_y=bg_offset_y,
+            )
+        draw.rounded_rectangle((0, 0, SCREEN_W - 1, SCREEN_H - 1), radius=spec["outer_r"], outline=th.card_border, width=1)
+    elif _is_paper(th):
         draw.rectangle((0, 0, SCREEN_W - 1, SCREEN_H - 1), outline=th.card_border, width=1)
         for cx, cy in ((4, 4), (SCREEN_W - 5, 4), (4, SCREEN_H - 5), (SCREEN_W - 5, SCREEN_H - 5)):
             draw.point((cx, cy), fill=th.accent)
@@ -1084,18 +1673,43 @@ def _render_screen_hires(
         box = draw.textbbox((0, 0), sample, font=font)
         return bar_mid_y - ((box[1] + box[3]) / (2.0 * s))
 
+    badge_d = 17
+    badge_gap = 5
+    resolved_badge_path = (active_bg_path or _default_emblem_path(th.is_dark)) if logo_path == "__widget_bg__" else logo_path
+    badge = _load_circle_logo(resolved_badge_path, size=badge_d * s, border_color=th.border_muted, fill_bg=th.paper)
+    l_pos = (logo_pos or "before_title").strip().lower()
+    if l_pos not in ("before_title", "after_title", "far_left", "far_right"):
+        l_pos = "before_title"
+
+    left_x0 = 10
+    if th.style == "macos":
+        for di, dc in enumerate(("#FF5F57", "#FEBC2E", "#28C840")):
+            dcx = 12 + di * 9
+            draw.ellipse((dcx - 2.5, bar_mid_y - 2.5, dcx + 2.5, bar_mid_y + 2.5), fill=dc)
+        left_x0 = 39
+    if badge is not None and l_pos == "far_left":
+        by = int(round((bar_mid_y - badge_d / 2.0) * s))
+        img.alpha_composite(badge, (int(round(left_x0 * s)), by))
+        left_x0 += badge_d + badge_gap
+
     weekdays = EN_WEEKDAYS if is_en else VN_WEEKDAYS
     wd = weekdays[now.weekday()]
     date_str = f"{wd} {now.strftime('%d/%m')}"
-    draw.text((10, _y_for_mid("H0", f.header_date)), date_str, font=f.header_date, fill=th.ink)
+    draw.text((left_x0, _y_for_mid("H0", f.header_date)), date_str, font=f.header_date, fill=th.ink)
     date_w = _text_width(draw, date_str, f.header_date)
     time_sub = f"· {now.strftime('%H:%M')}"
-    draw.text((16 + date_w, _y_for_mid("22:35", f.header_sub)), time_sub, font=f.header_sub, fill=th.muted)
-    left_end = 16 + date_w + _text_width(draw, time_sub, f.header_sub)
+    draw.text((left_x0 + 6 + date_w, _y_for_mid("22:35", f.header_sub)), time_sub, font=f.header_sub, fill=th.muted)
+    left_end = left_x0 + 6 + date_w + _text_width(draw, time_sub, f.header_sub)
 
     hdr_right = system_stats.gpu_name
     hdr_w = _text_width(draw, hdr_right, f.header_sub)
-    right_start = SCREEN_W - hdr_w - 10
+    right_edge = SCREEN_W - 10
+    if badge is not None and l_pos == "far_right":
+        bx_far = right_edge - badge_d
+        by = int(round((bar_mid_y - badge_d / 2.0) * s))
+        img.alpha_composite(badge, (int(round(bx_far * s)), by))
+        right_edge = bx_far - badge_gap
+    right_start = right_edge - hdr_w
     draw.text((right_start, _y_for_mid("RTX", f.header_sub)), hdr_right, font=f.header_sub, fill=th.muted)
 
     owner_clean = owner_name.strip()
@@ -1104,13 +1718,9 @@ def _render_screen_hires(
         avail_right = right_start - 10
         avail_w = max(40, avail_right - avail_left)
 
-        badge_d = 17
-        resolved_badge_path = active_bg_path if logo_path == "__widget_bg__" else logo_path
-        badge = _load_circle_logo(resolved_badge_path, size=badge_d * s, border_color=th.border_muted, fill_bg=th.paper)
-        badge_gap = 5
-        badge_w = (badge_d + badge_gap) if badge is not None else 0
+        inline_badge = badge if l_pos in ("before_title", "after_title") else None
+        badge_w = (badge_d + badge_gap) if inline_badge is not None else 0
 
-        # Auto-pick font size if name is exceptionally long so full name stays visible
         owner_font = f.header_date
         text_w = _text_width(draw, owner_clean, owner_font)
         if badge_w + text_w > avail_w:
@@ -1133,30 +1743,33 @@ def _render_screen_hires(
             ideal_center = (SCREEN_W - total_w) // 2
             ox = max(avail_left, min(ideal_center, avail_right - total_w))
 
-        if badge is not None:
-            by = int(round((bar_mid_y - badge_d / 2.0) * s))
-            img.alpha_composite(badge, (int(round(ox * s)), by))
+        by = int(round((bar_mid_y - badge_d / 2.0) * s))
+        if inline_badge is not None and l_pos == "before_title":
+            img.alpha_composite(inline_badge, (int(round(ox * s)), by))
             ox += badge_w
-        owner_trunc = _truncate_text(draw, owner_clean, owner_font, avail_right - ox)
+        text_avail = (avail_right - ox - (badge_w if l_pos == "after_title" and inline_badge is not None else 0))
+        owner_trunc = _truncate_text(draw, owner_clean, owner_font, max(20, text_avail))
         draw.text((ox, _y_for_mid("Hp", owner_font)), owner_trunc, font=owner_font, fill=th.accent)
+        if inline_badge is not None and l_pos == "after_title":
+            tw_drawn = _text_width(draw, owner_trunc, owner_font)
+            img.alpha_composite(inline_badge, (int(round((ox + tw_drawn + badge_gap) * s)), by))
+    elif badge is not None and l_pos in ("before_title", "after_title"):
+        by = int(round((bar_mid_y - badge_d / 2.0) * s))
+        img.alpha_composite(badge, (int(round(((SCREEN_W - badge_d) // 2) * s)), by))
 
-    _draw_fineline_rule(
-        draw,
-        8,
-        25,
-        SCREEN_W - 8,
-        25,
-        th.divider_soft if _is_paper(th) else th.ink,
-        th.accent,
-        with_dots=_is_paper(th),
-    )
-
-    # Center Vertical Axis (breaks cleanly across center emblem in paper serif mode)
-    if _is_paper(th):
-        _draw_fineline_rule(draw, div_x, 30, div_x, 51, th.divider_soft, th.accent, with_dots=True)
-        _draw_fineline_rule(draw, div_x, 201, div_x, SCREEN_H - 8, th.divider_soft, th.accent, with_dots=True)
-    else:
-        _draw_fineline_rule(draw, div_x, 30, div_x, SCREEN_H - 8, th.ink, th.accent, with_dots=False)
+    if not is_modern:
+        _draw_fineline_rule(
+            draw,
+            8,
+            25,
+            SCREEN_W - 8,
+            25,
+            th.divider_soft if _is_paper(th) else th.ink,
+            th.accent,
+            with_dots=_is_paper(th),
+        )
+        if not _is_paper(th):
+            _draw_fineline_rule(draw, div_x, 30, div_x, SCREEN_H - 8, th.ink, th.accent, with_dots=False)
 
     # 2. Left Column: RAM / CPU / GPU + 7-day Weather
     lx = 10
@@ -1166,10 +1779,11 @@ def _render_screen_hires(
     unit_norm = "F" if (temp_unit or "C").strip().upper() == "F" else "C"
     _draw_system_section(draw, f, th, lx, lw, system_stats, unit_norm, lang, hits)
 
-    _draw_fineline_rule(draw, lx, 127, lx + lw, 127, th.divider_soft, th.accent, with_dots=_is_paper(th))
+    if not is_modern:
+        _draw_fineline_rule(draw, lx, 127, lx + lw, 127, th.divider_soft, th.accent, with_dots=_is_paper(th))
 
     # Weather (Today + interactive 7-day strip)
-    wy = 131
+    wy = 132 if is_modern else 131
     city_disp = format_city_name(weather_data.city, lang)
     if weather_data.error:
         draw.text((lx, wy), f"{city_disp}: {weather_data.error[:22]}", font=f.small, fill=th.accent)
@@ -1210,10 +1824,13 @@ def _render_screen_hires(
                 out_w = th.accent if is_sel_w else (th.border_muted if is_today_w else None)
                 out_thick = 2 if is_sel_w else 1
                 if fill_w or out_w:
-                    draw.rectangle((x1, y1, x2, y2), fill=fill_w, outline=out_w, width=out_thick)
+                    if is_modern:
+                        draw.rounded_rectangle((x1, y1, x2, y2), radius=7, fill=fill_w, outline=out_w, width=out_thick)
+                    else:
+                        draw.rectangle((x1, y1, x2, y2), fill=fill_w, outline=out_w, width=out_thick)
 
                 wd_disp = day_abbr_for_lang(day.date_obj, day.weekday, lang)
-                wd_c = th.accent if day.date_obj.weekday() >= 5 else th.ink
+                wd_c = (th.warn if th.style == "xiaomi" else th.accent) if day.date_obj.weekday() >= 5 else th.ink
                 wd_w = _text_width(draw, wd_disp, f.tiny_bold)
                 draw.text((x1 + (x2 - x1 - wd_w) // 2, y1 + 2), wd_disp, font=f.tiny_bold, fill=wd_c)
 
@@ -1231,11 +1848,11 @@ def _render_screen_hires(
     # 3. Right Column (Calendar): HÔM NAY / TODAY + 1-click app buttons + 1-Month Calendar
     rx = div_x + 12
     rw = SCREEN_W - rx - 10
-    draw.text((rx, 29), "TODAY" if is_en else "HÔM NAY", font=f.section, fill=th.accent)
+    draw.text((rx, 30 if is_modern else 29), "TODAY" if is_en else "HÔM NAY", font=f.section, fill=(th.warn if th.style == "macos" else th.accent))
     done_txt = f"done {calendar_data.done_count}" if is_en else f"đã xong {calendar_data.done_count}"
-    draw.text((rx + rw - _text_width(draw, done_txt, f.small), 31), done_txt, font=f.small, fill=th.muted)
+    draw.text((rx + rw - _text_width(draw, done_txt, f.small), 32 if is_modern else 31), done_txt, font=f.small, fill=th.muted)
 
-    ey = 47
+    ey = 48 if is_modern else 47
     month_top_y = 92 if len(calendar_data.events_today) > 2 else 88
     if not calendar_data.has_urls:
         msg1 = "No Google Calendar .ics link" if is_en else "Chưa có link .ics Google Calendar"
@@ -1300,7 +1917,8 @@ def _render_screen_hires(
         draw, f, th, calendar_data, today, vy, vm, selected_date, rx, rw, month_top_y, hits, lang=lang
     )
 
-    return img.convert("RGB"), hits, th, clean_sys_hires, f, div_x
+    out_screen = img if is_modern else img.convert("RGB")
+    return out_screen, hits, th, clean_sys_hires, f, div_x
 
 
 def render_screen(
@@ -1320,6 +1938,13 @@ def render_screen(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
+    logo_pos: str = "before_title",
+    bg_pos: str = "cover",
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
+    bg_opacity: float | None = None,
 ) -> tuple[Image.Image, list[HitRegion], ThemePalette]:
     """Render crisp 480x224 screen image (2x supersampled), hit regions, and active theme."""
     hires, hits, th, _, _, _ = _render_screen_hires(
@@ -1340,6 +1965,13 @@ def render_screen(
         view_month=view_month,
         selected_date=selected_date,
         selected_weather_date=selected_weather_date,
+        logo_pos=logo_pos,
+        bg_pos=bg_pos,
+        bg_tone=bg_tone,
+        bg_zoom=bg_zoom,
+        bg_offset_x=bg_offset_x,
+        bg_offset_y=bg_offset_y,
+        bg_opacity=bg_opacity,
     )
     return hires.resize((SCREEN_W, SCREEN_H), Image.Resampling.LANCZOS), hits, th
 
@@ -1411,6 +2043,13 @@ def render_widget_cached(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
+    logo_pos: str = "before_title",
+    bg_pos: str = "cover",
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
+    bg_opacity: float | None = None,
 ) -> tuple[Image.Image, list[HitRegion], Image.Image, ThemePalette, SystemPatchCache]:
     ss = max(2, int(math.ceil(float(scale) * 2.0)))
     hires, raw_hits, th, clean_sys_hires, f, div_x = _render_screen_hires(
@@ -1431,6 +2070,13 @@ def render_widget_cached(
         view_month=view_month,
         selected_date=selected_date,
         selected_weather_date=selected_weather_date,
+        logo_pos=logo_pos,
+        bg_pos=bg_pos,
+        bg_tone=bg_tone,
+        bg_zoom=bg_zoom,
+        bg_offset_x=bg_offset_x,
+        bg_offset_y=bg_offset_y,
+        bg_opacity=bg_opacity,
     )
     screen_1x = hires.resize((SCREEN_W, SCREEN_H), Image.Resampling.LANCZOS)
     if abs(scale - 1.0) > 0.02:
@@ -1537,6 +2183,13 @@ def render_widget_with_hits(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
+    logo_pos: str = "before_title",
+    bg_pos: str = "cover",
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
+    bg_opacity: float | None = None,
 ) -> tuple[Image.Image, list[HitRegion], Image.Image, ThemePalette]:
     out, hits, screen_1x, th, _ = render_widget_cached(
         calendar_data,
@@ -1557,6 +2210,13 @@ def render_widget_with_hits(
         view_month=view_month,
         selected_date=selected_date,
         selected_weather_date=selected_weather_date,
+        logo_pos=logo_pos,
+        bg_pos=bg_pos,
+        bg_tone=bg_tone,
+        bg_zoom=bg_zoom,
+        bg_offset_x=bg_offset_x,
+        bg_offset_y=bg_offset_y,
+        bg_opacity=bg_opacity,
     )
     return out, hits, screen_1x, th
 
@@ -1580,6 +2240,13 @@ def render_widget_image(
     view_month: int | None = None,
     selected_date: date | None = None,
     selected_weather_date: date | None = None,
+    logo_pos: str = "before_title",
+    bg_pos: str = "cover",
+    bg_tone: str = "original",
+    bg_zoom: float = 1.0,
+    bg_offset_x: float = 0.0,
+    bg_offset_y: float = 0.0,
+    bg_opacity: float | None = None,
 ) -> Image.Image:
     out, _, _, _ = render_widget_with_hits(
         calendar_data,
@@ -1600,6 +2267,13 @@ def render_widget_image(
         view_month=view_month,
         selected_date=selected_date,
         selected_weather_date=selected_weather_date,
+        logo_pos=logo_pos,
+        bg_pos=bg_pos,
+        bg_tone=bg_tone,
+        bg_zoom=bg_zoom,
+        bg_offset_x=bg_offset_x,
+        bg_offset_y=bg_offset_y,
+        bg_opacity=bg_opacity,
     )
     return out
 
