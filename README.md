@@ -147,31 +147,37 @@ desk-widget/
 ├── start_widget.vbs    # Silent background launcher for Windows
 ├── run_widget.bat      # Console launcher for Windows debugging
 ├── start_mac.command   # Background launcher for macOS (Apple Silicon & Intel)
+├── UNINSTALL.txt       # Copy-paste uninstall commands for Windows (PS/CMD) & macOS
 ├── test_widget.py      # Automated unit tests
 └── assets/             # Optional local visual assets (personal images are gitignored)
 ```
 
-### Complete Uninstall (Remove 100% of App & Local Data)
+### Complete Uninstall (Remove 100% of App, Downloaded Files & Local Data)
 
-`desk-widget` does not modify the Windows Registry or install background system services. To remove it completely:
+`desk-widget` does not modify the Windows Registry or install background system services. You can also download [`UNINSTALL.txt`](UNINSTALL.txt) directly from the [GitHub Releases](https://github.com/hhuuphucc/Desk-Widget/releases/latest) assets. To remove it completely:
 
-1. **Quit & Turn off Auto-Start:** Right-click the widget → **Settings...** → uncheck **Auto-start** → **Save**, then Right-click → **Quit** *(or run the commands below if you already deleted the app)*.
+1. **Quit & Turn off Auto-Start:** Right-click the widget → **Settings...** → uncheck **Auto-start** → **Save**, then Right-click → **Quit** *(or run the commands below directly even if the app is still running)*.
 2. **Windows (`.exe` or Source):**
-   - Delete `desk-widget-windows-x64.exe` (or the cloned `desk-widget` folder).
-   - Remove the Startup shortcut, Desktop shortcut (if any), and `%APPDATA%\desk-widget` (`config.json`, custom images/icons, `widget.pid`):
+   - Run in **PowerShell** (`Win + X → Terminal`) to stop the app, remove Startup/Desktop shortcuts, `%APPDATA%\desk-widget` (`config.json`, custom images/icons, `widget.pid`), and downloaded `desk-widget*.exe` files (additionally delete your cloned `desk-widget` folder if running from source):
      ```powershell
      Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
+     Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*widget.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
      Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
-     Remove-Item ([Environment]::GetFolderPath('Desktop') + '\desk-widget.lnk') -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget.lnk') -Force -ErrorAction SilentlyContinue
      Remove-Item "$env:APPDATA\desk-widget" -Recurse -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path $HOME 'Downloads\desk-widget*.exe') -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget*.exe') -Force -ErrorAction SilentlyContinue
      ```
+   - Or in **Command Prompt (`cmd.exe`)** — see [`UNINSTALL.txt`](UNINSTALL.txt).
 3. **macOS (`.app` / `.dmg` or Source):**
-   - Unload the `LaunchAgent`, delete `/Applications/desk-widget.app` (or your source folder), and remove `~/Library/Application Support/desk-widget`:
+   - Run in **Terminal** (`Cmd + Space → Terminal`) to stop the app, unload `LaunchAgent`, delete `/Applications/desk-widget.app`, downloaded `desk-widget*.dmg` files, and `~/Library/Application Support/desk-widget` *(plus your cloned folder if running from source)*:
      ```bash
      pkill -f desk-widget || true
-     launchctl unload ~/Library/LaunchAgents/com.deskwidget.app.plist 2>/dev/null || true
-     rm -f ~/Library/LaunchAgents/com.deskwidget.app.plist
-     rm -rf /Applications/desk-widget.app "$HOME/Library/Application Support/desk-widget"
+     pkill -f "widget.py" || true
+     launchctl unload "$HOME/Library/LaunchAgents/com.deskwidget.app.plist" 2>/dev/null || true
+     rm -f "$HOME/Library/LaunchAgents/com.deskwidget.app.plist"
+     rm -rf /Applications/desk-widget.app "$HOME/Applications/desk-widget.app" "$HOME/Library/Application Support/desk-widget"
+     rm -f "$HOME/Downloads"/desk-widget*.dmg "$HOME/Desktop"/desk-widget*.dmg
      ```
 
 ### Unit Tests
@@ -304,27 +310,32 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
 | **Nhấn đúp** (vùng trống) | Mở bảng Cài đặt |
 | **Chuột phải** | Mở menu tùy chỉnh nhanh |
 
-### Gỡ bỏ hoàn toàn ứng dụng (Khi không dùng nữa)
+### Gỡ bỏ hoàn toàn ứng dụng (Xóa sạch app đã tải & dữ liệu khi không dùng nữa)
 
-`desk-widget` **không ghi vào Windows Registry** và không cài dịch vụ nền hệ thống. Để xóa sạch 100% khỏi máy:
+`desk-widget` **không ghi vào Windows Registry** và không cài dịch vụ nền hệ thống. Bạn cũng có thể tải nhanh file [`UNINSTALL.txt`](UNINSTALL.txt) ngay trong mục Assets trên trang [GitHub Releases](https://github.com/hhuuphucc/Desk-Widget/releases/latest). Để xóa sạch 100% khỏi máy:
 
-1. **Thoát app & Tắt tự khởi động:** Chuột phải vào widget → **Cài đặt...** → bỏ tích **Tự mở cùng Windows / macOS** → **Lưu**, sau đó Chuột phải → **Thoát** *(nếu lỡ xóa app trước rồi thì chạy thẳng lệnh bên dưới)*.
-2. **Trên Windows (bản `.exe` hoặc mã nguồn):**
-   - Xóa file `desk-widget-windows-x64.exe` (hoặc xóa thư mục mã nguồn `desk-widget`).
-   - Chạy PowerShell dưới đây để xóa sạch shortcut Startup, shortcut Desktop (nếu có) và thư mục dữ liệu `%APPDATA%\desk-widget` (`config.json`, ảnh nền/icon tùy chỉnh, `widget.pid`):
+1. **Thoát app & Tắt tự khởi động:** Chuột phải vào widget → **Cài đặt...** → bỏ tích **Tự mở cùng Windows / macOS** → **Lưu**, sau đó Chuột phải → **Thoát** *(hoặc chạy thẳng lệnh bên dưới ngay cả khi app đang mở)*.
+2. **Trên Windows (bản `.exe` đã tải hoặc mã nguồn):**
+   - Mở **PowerShell** (`Win + X → Terminal`), dán các lệnh dưới đây để tắt app, xóa shortcut Startup, shortcut Desktop, thư mục dữ liệu `%APPDATA%\desk-widget` (`config.json`, ảnh nền/icon tùy chỉnh, `widget.pid`) và xóa luôn file `desk-widget*.exe` đã tải về trong `Downloads` / `Desktop` *(nếu chạy từ mã nguồn thì xóa thêm thư mục code)*:
      ```powershell
      Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
+     Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*widget.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
      Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
-     Remove-Item ([Environment]::GetFolderPath('Desktop') + '\desk-widget.lnk') -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget.lnk') -Force -ErrorAction SilentlyContinue
      Remove-Item "$env:APPDATA\desk-widget" -Recurse -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path $HOME 'Downloads\desk-widget*.exe') -Force -ErrorAction SilentlyContinue
+     Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'desk-widget*.exe') -Force -ErrorAction SilentlyContinue
      ```
-3. **Trên macOS (bản `.dmg` / `.app` hoặc mã nguồn):**
-   - Mở Terminal chạy lệnh sau để tắt hẳn app, gỡ `LaunchAgent`, xóa `desk-widget.app` trong Applications (nếu chạy từ mã nguồn thì xóa thêm thư mục code) và xóa dữ liệu tại `~/Library/Application Support/desk-widget`:
+   - *(Nếu dùng **Command Prompt `cmd.exe`**, xem sẵn lệnh CMD trong file [`UNINSTALL.txt`](UNINSTALL.txt).)*
+3. **Trên macOS (bản `.dmg` / `.app` đã tải hoặc mã nguồn):**
+   - Mở **Terminal** (`Cmd + Space → Terminal`) chạy lệnh sau để tắt hẳn app, gỡ `LaunchAgent`, xóa `desk-widget.app`, file `.dmg` đã tải về trong `Downloads` / `Desktop` và dữ liệu tại `~/Library/Application Support/desk-widget` *(cùng thư mục code nếu chạy từ mã nguồn)*:
      ```bash
      pkill -f desk-widget || true
-     launchctl unload ~/Library/LaunchAgents/com.deskwidget.app.plist 2>/dev/null || true
-     rm -f ~/Library/LaunchAgents/com.deskwidget.app.plist
-     rm -rf /Applications/desk-widget.app "$HOME/Library/Application Support/desk-widget"
+     pkill -f "widget.py" || true
+     launchctl unload "$HOME/Library/LaunchAgents/com.deskwidget.app.plist" 2>/dev/null || true
+     rm -f "$HOME/Library/LaunchAgents/com.deskwidget.app.plist"
+     rm -rf /Applications/desk-widget.app "$HOME/Applications/desk-widget.app" "$HOME/Library/Application Support/desk-widget"
+     rm -f "$HOME/Downloads"/desk-widget*.dmg "$HOME/Desktop"/desk-widget*.dmg
      ```
 
 ### Kiểm tra hoạt động (Unit Tests)
