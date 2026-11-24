@@ -106,7 +106,7 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to unlock `City`, `Find coords`, `Lat/Lon`, and `Timezone` manually. *(See [`INFO.md`](INFO.md#1-travelling-anywhere-in-the-world-auto-detect-via-ip) for IP/VPN caveats and manual coordinate/timezone tips.)*
 4. **In Settings vs Right-Click Menu:**
    - **Inside Settings:** Change **Visual style** (`Botanical` / `Classic Serif` / `Minimal Sans`), **E-Ink theme** (`auto` / `system` / `light` / `dark`), **Title alignment**, **Temperature unit** (`°C` / `°F`), **Language**, **Auto-start**, **Always on top** / **Send behind**, **Background & Header Logo**, and **App Icon**. *(Fresh clones start with a clean neutral card for personal customization.)*
-   - **Streamlined Right-Click Menu:** Account sign-in / profile / Admin Panel, `Refresh now`, `Settings...`, `Export ESL (296×128 PNG)...`, `Check for updates (v1.1.1)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
+   - **Streamlined Right-Click Menu:** `Refresh now`, `Settings...`, `Export ESL (296×128 PNG)...`, `Check for updates (v1.1.1)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
 
 ### Quick Interactions
 
@@ -128,16 +128,14 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 ```text
 desk-widget/
 ├── INFO.md             # User guide & caveats (IP geolocation, Lat/Lon, CPU popup, Win/macOS tips)
-├── widget.py           # Tkinter UI, interactions, auth dialogs, Admin Panel & auto-start
-├── auth_client.py      # Supabase Auth, 3-tier RBAC RPCs & DPAPI/0600 session storage
-├── supabase_schema.sql # PostgreSQL tables, RLS policies, super_admin trigger & 11-digit Co-Admin ID generator
+├── widget.py           # Tkinter UI, interactions, Settings & auto-start
 ├── renderer.py         # Pillow HiDPI renderer (Botanical, Classic Serif, Minimal Sans)
 ├── calendar_client.py  # .ics / embed URL fetcher, parser & meeting-link detector
 ├── weather_client.py   # Open-Meteo 7-day weather & IP geolocation/timezone client
 ├── system_client.py    # Windows & macOS (Apple Silicon/Intel) RAM/CPU/GPU/temp monitor
-├── updater.py          # GitHub Releases version checker & OS asset selector
+├── updater.py          # App copyright metadata, GitHub Releases checker & OS asset selector
 ├── build_app.py        # PyInstaller standalone packaging script (.exe / .dmg)
-├── config.example.json # Public config template (personal config.json & session.json are gitignored)
+├── config.example.json # Public config template (personal config.json is gitignored)
 ├── requirements.txt    # Python package dependencies
 ├── start_widget.vbs    # Silent background launcher for Windows
 ├── run_widget.bat      # Console launcher for Windows debugging
@@ -153,7 +151,7 @@ desk-widget/
 1. **Quit & Turn off Auto-Start:** Right-click the widget → **Settings...** → uncheck **Auto-start** → **Save**, then Right-click → **Quit** *(or run the commands below if you already deleted the app)*.
 2. **Windows (`.exe` or Source):**
    - Delete `desk-widget-windows-x64.exe` (or the cloned `desk-widget` folder).
-   - Remove the Startup shortcut, Desktop shortcut (if any), and `%APPDATA%\desk-widget` (`config.json`, encrypted `session.json`, custom images/icons, `widget.pid`):
+   - Remove the Startup shortcut, Desktop shortcut (if any), and `%APPDATA%\desk-widget` (`config.json`, custom images/icons, `widget.pid`):
      ```powershell
      Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
      Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue
@@ -274,7 +272,7 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - Mặc định bật **Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)**. Nếu muốn cố định thành phố khác, **bỏ tích** để mở khóa 5 ô (`Thành phố`, `Tìm tọa độ`, `Lat/Lon`, `Múi giờ`) rồi gõ tên thành phố → **Tìm tọa độ** (và chỉnh `Múi giờ` nếu muốn xem giờ nơi đó). *(Xem thêm các ngoại lệ mạng 4G/VPN & mẹo tìm tọa độ chuẩn tại [`INFO.md`](INFO.md#1-khi-đi-sang-tỉnh--thành--bang--nước-khác-bật-tự-động-theo-ip).)*
 4. **Cài đặt giao diện & Menu chuột phải:**
    - **Trong Cài đặt:** Chỉnh `Phong cách giao diện` (**Botanical / Classic Serif / Minimal Sans**), `Giao diện E-Ink` (`auto / system / light / dark`), `Vị trí tên tiêu đề`, `Độ C / Độ F`, `Ngôn ngữ`, `Tự khởi động`, `Luôn nổi trên cùng` / `Ẩn ra sau ngay`, `Đổi nền / Logo` (icon tròn cạnh tên đồng bộ theo nền widget), và `Đổi icon app...`.
-   - **Menu chuột phải gọn nhẹ:** Quản lý tài khoản / Bảng quản trị, `Làm mới ngay`, `Cài đặt...`, `Xuất ảnh ESL (296×128 PNG)...`, `Kiểm tra cập nhật (v1.1.1)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
+   - **Menu chuột phải gọn nhẹ:** `Làm mới ngay`, `Cài đặt...`, `Xuất ảnh ESL (296×128 PNG)...`, `Kiểm tra cập nhật (v1.1.1)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
 
 ### Thao tác nhanh trên Widget
 
@@ -298,7 +296,7 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
 1. **Thoát app & Tắt tự khởi động:** Chuột phải vào widget → **Cài đặt...** → bỏ tích **Tự mở cùng Windows / macOS** → **Lưu**, sau đó Chuột phải → **Thoát** *(nếu lỡ xóa app trước rồi thì chạy thẳng lệnh bên dưới)*.
 2. **Trên Windows (bản `.exe` hoặc mã nguồn):**
    - Xóa file `desk-widget-windows-x64.exe` (hoặc xóa thư mục mã nguồn `desk-widget`).
-   - Chạy PowerShell dưới đây để xóa sạch shortcut Startup, shortcut Desktop (nếu có) và thư mục dữ liệu `%APPDATA%\desk-widget` (`config.json`, `session.json`, ảnh nền/icon tùy chỉnh, `widget.pid`):
+   - Chạy PowerShell dưới đây để xóa sạch shortcut Startup, shortcut Desktop (nếu có) và thư mục dữ liệu `%APPDATA%\desk-widget` (`config.json`, ảnh nền/icon tùy chỉnh, `widget.pid`):
      ```powershell
      Get-Process desk-widget -ErrorAction SilentlyContinue | Stop-Process -Force
      Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\desk-widget.lnk" -Force -ErrorAction SilentlyContinue

@@ -70,14 +70,6 @@ from calendar_client import (
     format_event_time,
     parse_ics_for_date,
 )
-from auth_client import (
-    DEFAULT_FEATURE_FLAGS,
-    SUPABASE_ANON_KEY,
-    SUPABASE_URL,
-    AuthClient,
-    RemoteSettings,
-    start_recovery_callback_listener,
-)
 from renderer import (
     PAPER_SERIF_LIGHT,
     HitRegion,
@@ -125,7 +117,6 @@ def _get_user_data_dir() -> str:
 
 BASE_DIR = _get_user_data_dir()
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-SESSION_PATH = os.path.join(BASE_DIR, "session.json")
 PID_PATH = os.path.join(BASE_DIR, "widget.pid")
 ICON_PATH = os.path.join(RESOURCE_DIR, "app_icon.ico")
 MAC_PLIST_LABEL = "com.deskwidget.app"
@@ -152,10 +143,6 @@ DEFAULT_CONFIG = {
     "scale": 1.0,
     "window_x": None,
     "window_y": None,
-    "auth": {
-        "supabase_url": "",
-        "supabase_anon_key": "",
-    },
     "weather": {
         "auto_location": True,
         "city": "Hà Nội",
@@ -164,39 +151,6 @@ DEFAULT_CONFIG = {
         "cache_minutes": 15,
     },
 }
-
-
-def build_offline_demo_calendar(
-    now: datetime,
-    lang: str = "vi",
-    view_year: int | None = None,
-    view_month: int | None = None,
-) -> CalendarSummary:
-    """Build a lightweight offline sample calendar shown before a user signs in."""
-    from datetime import timedelta
-
-    today = now.date()
-    tomorrow = today + timedelta(days=1)
-    t_str = today.strftime("%Y%m%d")
-    n_str = tomorrow.strftime("%Y%m%d")
-    is_en = (lang or "vi").strip().lower() == "en"
-    ev1 = "Offline Demo • Sign in to sync Calendar" if is_en else "Bản xem thử Offline • Đăng nhập để đồng bộ lịch"
-    ev2 = "Sample Focus Session" if is_en else "Mẫu: Giờ làm việc tập trung"
-    ev3 = "Tomorrow Sample Event" if is_en else "Mẫu: Lịch ngày mai"
-    sample_ics = (
-        "BEGIN:VCALENDAR\nVERSION:2.0\n"
-        f"BEGIN:VEVENT\nUID:demo-1\nDTSTART;VALUE=DATE:{t_str}\nDTEND;VALUE=DATE:{n_str}\nSUMMARY:{ev1}\nEND:VEVENT\n"
-        f"BEGIN:VEVENT\nUID:demo-2\nDTSTART:{t_str}T140000\nDTEND:{t_str}T153000\nSUMMARY:{ev2}\nEND:VEVENT\n"
-        f"BEGIN:VEVENT\nUID:demo-3\nDTSTART:{n_str}T090000\nDTEND:{n_str}T100000\nSUMMARY:{ev3}\nEND:VEVENT\n"
-        "END:VCALENDAR\n"
-    )
-    return parse_ics_for_date(
-        [("Demo", sample_ics)],
-        now=now,
-        tz_name="Asia/Ho_Chi_Minh",
-        view_year=view_year or today.year,
-        view_month=view_month or today.month,
-    )
 
 
 def _startup_shortcut_path() -> str:
@@ -483,10 +437,6 @@ class ESLDeskWidget:
     def __init__(self) -> None:
         _enable_dpi_awareness()
         self.cfg = load_config()
-        auth_cfg = self.cfg.get("auth") if isinstance(self.cfg.get("auth"), dict) else {}
-        sb_url = str((auth_cfg or {}).get("supabase_url") or SUPABASE_URL).strip()
-        sb_key = str((auth_cfg or {}).get("supabase_anon_key") or SUPABASE_ANON_KEY).strip()
-        self.auth_client = AuthClient(SESSION_PATH, supabase_url=sb_url, supabase_anon_key=sb_key)
         self.calendar_client = CalendarClient()
         self.weather_client = WeatherClient()
         self.sys_monitor = SystemMonitor()
@@ -510,9 +460,6 @@ class ESLDeskWidget:
         self._detail_key: tuple[str, object] | None = None
         self._settings_win: tk.Toplevel | None = None
         self._settings_logo_sync = None
-        self._auth_win: tk.Toplevel | None = None
-        self._admin_win: tk.Toplevel | None = None
-        self._shown_announcement_key: str = ""
         self._last_fg: int | None = None
 
         self._refresh_lock = threading.Lock()
@@ -577,67 +524,16 @@ class ESLDeskWidget:
         self._schedule_sys_refresh()
         self._last_observed_dark: bool | None = None
         self.root.after(3000, self._theme_watchdog)
-        self.root.after(1200, self._refresh_auth_async)
         self._notified_update_ver: str | None = None
         self.root.after(5000, lambda: self._check_updates_async(silent=True))
 
     def _lang(self) -> str:
         return "en" if str(self.cfg.get("language", "vi")).strip().lower() == "en" else "vi"
 
-    def _feature_allowed(self, flag_name: str) -> bool:
-        sess = self.auth_client.session
-        role = sess.effective_role
-        if role in ("admin", "super_admin"):
-            return True
-        if self.auth_client.is_configured() and sess.is_guest:
-            if flag_name in ("allow_style", "allow_theme", "allow_updates"):
-                return True
-            if flag_name in ("allow_settings", "allow_bg_logo", "allow_esl_export"):
-                return False
-        return self.auth_client.remote_settings.allows(flag_name, role)
-
     def _build_menu(self) -> None:
         is_en = self._lang() == "en"
-        sess = self.auth_client.session
-        role = sess.effective_role
         self.menu = tk.Menu(self.root, tearoff=0)
 
-        if sess.is_guest:
-            auth_lbl = (
-                "Offline Demo • Sign in / Register..."
-                if (is_en and self.auth_client.is_configured())
-                else (
-                    "Xem thử Offline • Đăng nhập / Đăng ký..."
-                    if self.auth_client.is_configured()
-                    else ("Account / Connect Supabase..." if is_en else "Tài khoản / Kết nối Supabase...")
-                )
-            )
-            self.menu.add_command(label=auth_lbl, command=lambda: self._open_auth_dialog(0))
-        else:
-            role_tags = {
-                "super_admin": "Super Admin",
-                "admin": "Co-Admin" if is_en else "Đồng Admin",
-                "user": "User",
-            }
-            tag = role_tags.get(role, "User")
-            self.menu.add_command(label=f"● {sess.email} [{tag}]", state="disabled")
-            if sess.is_admin:
-                self.menu.add_command(
-                    label="Admin Panel..." if is_en else "Bảng quản trị (Admin Panel)...",
-                    command=self._open_admin_panel,
-                )
-            else:
-                self.menu.add_command(
-                    label="Activate Admin by ID..." if is_en else "Nhập Admin ID...",
-                    command=lambda: self._open_auth_dialog(1),
-                )
-            self.menu.add_command(
-                label="Account & Password..." if is_en else "Tài khoản & Đổi mật khẩu...",
-                command=self._open_account_dialog,
-            )
-            self.menu.add_command(label="Sign out" if is_en else "Đăng xuất", command=self._sign_out)
-
-        self.menu.add_separator()
         self.menu.add_command(
             label="Refresh now" if is_en else "Làm mới ngay",
             command=lambda: self.trigger_refresh(force_weather=True),
@@ -645,19 +541,16 @@ class ESLDeskWidget:
         self.menu.add_command(
             label="Settings (Calendar .ics, Weather)..." if is_en else "Cài đặt (Lịch .ics, Thời tiết)...",
             command=self.open_settings,
-            state="normal" if (self._feature_allowed("allow_settings") or sess.is_guest) else "disabled",
         )
         self.menu.add_separator()
         self.menu.add_command(
             label="Export ESL (296×128 PNG)..." if is_en else "Xuất ảnh ESL (296×128 PNG)...",
             command=self._export_esl,
-            state="normal" if self._feature_allowed("allow_esl_export") else "disabled",
         )
         upd_lbl = f"Check for updates (v{APP_VERSION})..." if is_en else f"Kiểm tra cập nhật (v{APP_VERSION})..."
         self.menu.add_command(
             label=upd_lbl,
             command=lambda: self._check_updates_async(silent=False),
-            state="normal" if self._feature_allowed("allow_updates") else "disabled",
         )
         self.menu.add_separator()
         self.menu.add_command(label="Quit" if is_en else "Thoát", command=self.quit)
@@ -706,13 +599,6 @@ class ESLDeskWidget:
         if now is None:
             now = self._active_now()
         effective_theme = str(self.cfg.get("theme", "auto"))
-        if not self.auth_client.session.is_admin and self.auth_client.remote_settings.force_theme in (
-            "auto",
-            "system",
-            "light",
-            "dark",
-        ):
-            effective_theme = self.auth_client.remote_settings.force_theme
         img, hits, screen, th, sys_cache = render_widget_cached(
             self._last_cal,
             self._last_weather,
@@ -1610,24 +1496,12 @@ class ESLDeskWidget:
 
             effective_tz = str(cfg.get("timezone", "Asia/Ho_Chi_Minh"))
             now = datetime.now(_get_tz(effective_tz))
-            if self.auth_client.is_configured() and self.auth_client.session.is_guest:
-                cal = build_offline_demo_calendar(
-                    now,
-                    lang=self._lang(),
-                    view_year=self.view_year,
-                    view_month=self.view_month,
-                )
-            else:
-                cal_sources = list(cfg.get("calendars", []))
-                shared_ics = self.auth_client.remote_settings.shared_ics_url
-                if shared_ics and not any(str(c.get("url") or "").strip() == shared_ics for c in cal_sources):
-                    cal_sources.append({"name": "Shared" if self._lang() == "en" else "Lịch chung", "url": shared_ics, "enabled": True})
-                cal = self.calendar_client.fetch(
-                    cal_sources,
-                    tz_name=effective_tz,
-                    view_year=self.view_year,
-                    view_month=self.view_month,
-                )
+            cal = self.calendar_client.fetch(
+                list(cfg.get("calendars", [])),
+                tz_name=effective_tz,
+                view_year=self.view_year,
+                view_month=self.view_month,
+            )
             stats = self.sys_monitor.read(sample_interval=None, include_cpu_temp=True)
 
             def _update_ui() -> None:
@@ -1688,34 +1562,6 @@ class ESLDeskWidget:
 
     def open_settings(self) -> None:
         is_en = self._lang() == "en"
-        if self.auth_client.is_configured() and self.auth_client.session.is_guest:
-            ask = messagebox.askyesno(
-                "Sign in required" if is_en else "Cần đăng nhập để đồng bộ",
-                (
-                    "You are viewing the Offline Demo mode.\n\n"
-                    "Sign in or register with your email to sync your Google Calendar & save full settings?"
-                )
-                if is_en
-                else (
-                    "Bạn đang ở chế độ Xem thử Offline.\n\n"
-                    "Hãy đăng nhập hoặc đăng ký bằng Email để đồng bộ Google Calendar và mở khóa Cài đặt?"
-                ),
-                parent=self.root,
-            )
-            if ask:
-                self._open_auth_dialog(0)
-            return
-
-        if not self._feature_allowed("allow_settings"):
-            messagebox.showinfo(
-                "Restricted" if is_en else "Tính năng tạm khóa",
-                "Settings editing is currently disabled by Admin."
-                if is_en
-                else "Cài đặt hiện đang được Admin tạm khóa đối với tài khoản User.",
-                parent=self.root,
-            )
-            return
-
         if self._settings_win is not None and self._settings_win.winfo_exists():
             self._settings_win.lift()
             return
@@ -1896,15 +1742,13 @@ class ESLDeskWidget:
         opt_row = ttk.Frame(frm)
         opt_row.grid(row=10, column=0, columnspan=2, sticky="ew", **pad)
         ttk.Label(opt_row, text="Style:" if is_en else "Phong cách:").pack(side="left")
-        cb_style = ttk.Combobox(opt_row, textvariable=var_style_set, values=["botanical", "serif", "sans"], width=9, state="readonly")
-        cb_style.pack(side="left", padx=(4, 8))
-        if not self._feature_allowed("allow_style"):
-            cb_style.configure(state="disabled")
+        ttk.Combobox(opt_row, textvariable=var_style_set, values=["botanical", "serif", "sans"], width=9, state="readonly").pack(
+            side="left", padx=(4, 8)
+        )
         ttk.Label(opt_row, text="Theme:" if is_en else "Chế độ:").pack(side="left")
-        cb_theme = ttk.Combobox(opt_row, textvariable=var_theme_set, values=["auto", "system", "light", "dark"], width=7, state="readonly")
-        cb_theme.pack(side="left", padx=(4, 8))
-        if not self._feature_allowed("allow_theme"):
-            cb_theme.configure(state="disabled")
+        ttk.Combobox(opt_row, textvariable=var_theme_set, values=["auto", "system", "light", "dark"], width=7, state="readonly").pack(
+            side="left", padx=(4, 8)
+        )
         ttk.Label(opt_row, text="Scale:" if is_en else "Cỡ:").pack(side="left")
         ttk.Combobox(opt_row, textvariable=var_scale, values=[0.85, 1.0, 1.2, 1.25, 1.4], width=5, state="readonly").pack(
             side="left", padx=(4, 8)
@@ -1950,8 +1794,6 @@ class ESLDeskWidget:
             command=lambda: (var_topmost_set.set(False), self._send_to_back()),
         ).pack(side="left", padx=(8, 0))
 
-        allow_bg = self._feature_allowed("allow_bg_logo")
-        bg_state = "normal" if allow_bg else "disabled"
         brand_row = ttk.Frame(frm)
         brand_row.grid(row=12, column=0, columnspan=2, sticky="ew", **pad)
         ttk.Label(brand_row, text="Header Icon:" if is_en else "Logo:").pack(side="left")
@@ -1960,19 +1802,19 @@ class ESLDeskWidget:
             textvariable=var_logo_set,
             values=list(logo_labels.values()),
             width=13,
-            state="readonly" if allow_bg else "disabled",
+            state="readonly",
         )
         cb_logo.pack(side="left", padx=(4, 8))
-        ttk.Button(brand_row, text="Bg..." if is_en else "Đổi nền...", command=self._choose_widget_bg, state=bg_state).pack(
+        ttk.Button(brand_row, text="Bg..." if is_en else "Đổi nền...", command=self._choose_widget_bg).pack(
             side="left", padx=2
         )
-        ttk.Button(brand_row, text="Reset Bg" if is_en else "Nền mặc định", command=self._reset_widget_bg, state=bg_state).pack(
+        ttk.Button(brand_row, text="Reset Bg" if is_en else "Nền mặc định", command=self._reset_widget_bg).pack(
             side="left", padx=2
         )
-        ttk.Button(brand_row, text="Logo..." if is_en else "Đổi logo...", command=self._choose_custom_logo, state=bg_state).pack(
+        ttk.Button(brand_row, text="Logo..." if is_en else "Đổi logo...", command=self._choose_custom_logo).pack(
             side="left", padx=2
         )
-        ttk.Button(brand_row, text="App Icon..." if is_en else "Đổi icon app...", command=self._change_icon, state=bg_state).pack(
+        ttk.Button(brand_row, text="App Icon..." if is_en else "Đổi icon app...", command=self._change_icon).pack(
             side="left", padx=2
         )
 
@@ -2066,614 +1908,6 @@ class ESLDeskWidget:
         ttk.Button(btn_row, text="Cancel" if is_en else "Hủy", command=win.destroy).pack(side="right", padx=(6, 0))
         ttk.Button(btn_row, text="Save & Refresh" if is_en else "Lưu & Cập nhật", command=_save).pack(side="right")
 
-    def _refresh_auth_async(self) -> None:
-        if not self.auth_client.is_configured():
-            return
-
-        def _worker() -> None:
-            res = self.auth_client.refresh_session()
-
-            def _apply() -> None:
-                self._build_menu()
-                if res.ok:
-                    self.trigger_refresh(force_weather=False)
-                    self._apply_remote_announcement()
-
-            try:
-                self.root.after(0, _apply)
-            except Exception:
-                pass
-
-        threading.Thread(target=_worker, daemon=True).start()
-
-    def _apply_remote_announcement(self) -> None:
-        rs = self.auth_client.remote_settings
-        body = (rs.announcement_body or "").strip()
-        if not body:
-            return
-        key = f"{rs.announcement_title}|{body}"
-        if key == self._shown_announcement_key:
-            return
-        self._shown_announcement_key = key
-        is_en = self._lang() == "en"
-        title = rs.announcement_title or ("Announcement" if is_en else "Thông báo hệ thống")
-        try:
-            messagebox.showinfo(title, body, parent=self.root)
-        except Exception:
-            pass
-
-    def _sign_out(self) -> None:
-        self.auth_client.sign_out()
-        self._build_menu()
-        self.trigger_refresh(force_weather=False)
-
-    def _open_auth_dialog(self, initial_tab: int = 0) -> None:
-        if self._auth_win is not None and self._auth_win.winfo_exists():
-            self._auth_win.lift()
-            return
-        is_en = self._lang() == "en"
-        win = tk.Toplevel(self.root)
-        self._auth_win = win
-        win.title("Sign in & Permissions" if is_en else "Đăng nhập & Phân quyền")
-        _set_window_icon(win, _active_icon_path(self.cfg))
-        win.resizable(False, False)
-
-        outer = ttk.Frame(win, padding=12)
-        outer.pack(fill="both", expand=True)
-
-        nb = ttk.Notebook(outer)
-        nb.pack(fill="both", expand=True)
-
-        status_var = tk.StringVar(value="")
-
-        # Tab 0: User Login / Signup
-        tab_user = ttk.Frame(nb, padding=10)
-        nb.add(tab_user, text="User (Email)")
-        u_email = tk.StringVar(value=self.auth_client.session.email)
-        u_pass = tk.StringVar()
-
-        ttk.Label(tab_user, text="Email:").grid(row=0, column=0, sticky="w", pady=4)
-        ttk.Entry(tab_user, textvariable=u_email, width=34).grid(row=0, column=1, columnspan=2, sticky="ew", pady=4, padx=(6, 0))
-        ttk.Label(tab_user, text="Password:" if is_en else "Mật khẩu:").grid(row=1, column=0, sticky="w", pady=4)
-        ttk.Entry(tab_user, textvariable=u_pass, show="•", width=34).grid(row=1, column=1, columnspan=2, sticky="ew", pady=4, padx=(6, 0))
-
-        def _run_bg(fn, on_done) -> None:
-            status_var.set("Processing..." if is_en else "Đang xử lý...")
-
-            def _w() -> None:
-                res = fn()
-                try:
-                    win.after(0, lambda: on_done(res))
-                except Exception:
-                    pass
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        def _after_auth(res) -> None:
-            if res.ok:
-                status_var.set("")
-                self._build_menu()
-                self.trigger_refresh(force_weather=False)
-                self._apply_remote_announcement()
-                if res.session is not None:
-                    win.destroy()
-                else:
-                    messagebox.showinfo("Info" if is_en else "Thông báo", res.message, parent=win)
-            else:
-                status_var.set(res.message)
-
-        u_btns = ttk.Frame(tab_user)
-        u_btns.grid(row=2, column=0, columnspan=3, sticky="e", pady=(10, 2))
-        ttk.Button(
-            u_btns,
-            text="Forgot password?" if is_en else "Quên mật khẩu?",
-            command=lambda: nb.select(2),
-        ).pack(side="left", padx=(0, 8))
-        ttk.Button(
-            u_btns,
-            text="Register" if is_en else "Đăng ký",
-            command=lambda: _run_bg(lambda: self.auth_client.sign_up(u_email.get(), u_pass.get()), _after_auth),
-        ).pack(side="right", padx=(6, 0))
-        ttk.Button(
-            u_btns,
-            text="Sign in" if is_en else "Đăng nhập",
-            command=lambda: _run_bg(lambda: self.auth_client.sign_in_user(u_email.get(), u_pass.get()), _after_auth),
-        ).pack(side="right")
-
-        # Tab 1: Admin / Co-Admin Login (Email + Password + Admin ID)
-        tab_admin = ttk.Frame(nb, padding=10)
-        nb.add(tab_admin, text="Admin / Co-Admin")
-        a_email = tk.StringVar(value=self.auth_client.session.email)
-        a_pass = tk.StringVar()
-        a_id = tk.StringVar()
-
-        ttk.Label(tab_admin, text="Email:").grid(row=0, column=0, sticky="w", pady=4)
-        ttk.Entry(tab_admin, textvariable=a_email, width=34).grid(row=0, column=1, sticky="ew", pady=4, padx=(6, 0))
-        ttk.Label(tab_admin, text="Password:" if is_en else "Mật khẩu:").grid(row=1, column=0, sticky="w", pady=4)
-        ttk.Entry(tab_admin, textvariable=a_pass, show="•", width=34).grid(row=1, column=1, sticky="ew", pady=4, padx=(6, 0))
-        ttk.Label(tab_admin, text="Admin ID:").grid(row=2, column=0, sticky="w", pady=4)
-        ttk.Entry(tab_admin, textvariable=a_id, show="•", width=34).grid(row=2, column=1, sticky="ew", pady=4, padx=(6, 0))
-        if not self.auth_client.session.is_guest:
-            ttk.Label(
-                tab_admin,
-                text=(
-                    f"Signed in as {self.auth_client.session.email}. Leave password blank to verify ID directly."
-                    if is_en
-                    else f"Đang đăng nhập {self.auth_client.session.email}. Có thể để trống mật khẩu để nhập thẳng Admin ID."
-                ),
-                foreground="#555555",
-                wraplength=310,
-            ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(2, 4))
-
-        def _submit_admin() -> None:
-            if not self.auth_client.session.is_guest and not a_pass.get().strip():
-                _run_bg(lambda: self.auth_client.activate_admin_with_id(a_id.get()), _after_auth)
-            else:
-                _run_bg(lambda: self.auth_client.sign_in_admin(a_email.get(), a_pass.get(), a_id.get()), _after_auth)
-
-        a_btns = ttk.Frame(tab_admin)
-        a_btns.grid(row=4, column=0, columnspan=2, sticky="e", pady=(8, 2))
-        ttk.Button(
-            a_btns,
-            text="Verify & Sign in Admin" if is_en else "Xác thực & Vào quyền Admin",
-            command=_submit_admin,
-        ).pack(side="right")
-
-        # Tab 2: Forgot Password (Email Link / OTP inside desktop app)
-        tab_rec = ttk.Frame(nb, padding=10)
-        nb.add(tab_rec, text="Reset Password" if is_en else "Quên mật khẩu")
-        r_email = tk.StringVar(value=self.auth_client.session.email)
-        r_otp = tk.StringVar()
-        r_new_pass = tk.StringVar()
-        rec_srv_holder: list[object] = []
-
-        def _stop_rec_srv() -> None:
-            while rec_srv_holder:
-                srv = rec_srv_holder.pop()
-                try:
-                    srv.shutdown()
-                    srv.server_close()
-                except Exception:
-                    pass
-
-        def _send_recovery_with_listener() -> None:
-            _stop_rec_srv()
-            srv = start_recovery_callback_listener(
-                lambda url: win.after(
-                    0,
-                    lambda: (
-                        r_otp.set(url),
-                        status_var.set(
-                            "Captured reset link! Enter new password & Confirm."
-                            if is_en
-                            else "Đã tự nhận link khôi phục từ Email! Nhập mật khẩu mới bên dưới rồi bấm Đặt lại."
-                        ),
-                    ),
-                )
-            )
-            if srv is not None:
-                rec_srv_holder.append(srv)
-            _run_bg(
-                lambda: self.auth_client.send_password_recovery(r_email.get()),
-                lambda r: status_var.set(
-                    r.message
-                    + (
-                        " (Click the link in your email or paste the redirected URL below.)"
-                        if is_en
-                        else " (Mở email bấm vào link xác nhận — app sẽ tự bắt link, hoặc dán link/mã OTP vào ô dưới.)"
-                    )
-                    if r.ok
-                    else r.message
-                ),
-            )
-
-        ttk.Label(tab_rec, text="Email:").grid(row=0, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_rec, textvariable=r_email, width=24).grid(row=0, column=1, sticky="ew", pady=3, padx=(6, 4))
-        ttk.Button(
-            tab_rec,
-            text="Send Reset Email" if is_en else "Gửi mail khôi phục",
-            command=_send_recovery_with_listener,
-        ).grid(row=0, column=2, pady=3)
-
-        ttk.Label(tab_rec, text="OTP or Reset URL:" if is_en else "Mã OTP / Link:").grid(row=1, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_rec, textvariable=r_otp, width=32).grid(row=1, column=1, columnspan=2, sticky="ew", pady=3, padx=(6, 0))
-        ttk.Label(tab_rec, text="New Password:" if is_en else "Mật khẩu mới:").grid(row=2, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_rec, textvariable=r_new_pass, show="•", width=32).grid(row=2, column=1, columnspan=2, sticky="ew", pady=3, padx=(6, 0))
-        ttk.Button(
-            tab_rec,
-            text="Confirm Password Reset" if is_en else "Đặt lại mật khẩu",
-            command=lambda: _run_bg(
-                lambda: self.auth_client.verify_recovery_and_set_password(r_email.get(), r_otp.get(), r_new_pass.get()),
-                lambda r: (_stop_rec_srv() if r.ok else None, status_var.set(r.message)),
-            ),
-        ).grid(row=3, column=0, columnspan=3, sticky="e", pady=(8, 2))
-
-        win.bind("<Destroy>", lambda e: _stop_rec_srv() if e.widget is win else None)
-
-        nb.select(max(0, min(2, initial_tab)))
-
-        # Status & Optional Supabase Server Configuration
-        ttk.Label(outer, textvariable=status_var, foreground="#B22222", wraplength=340).pack(anchor="w", pady=(6, 2))
-
-        sb_box = ttk.LabelFrame(
-            outer,
-            text="Supabase Server (URL & Anon Key)" if is_en else "Cấu hình Supabase (URL & Anon Key)",
-            padding=8,
-        )
-        sb_box.pack(fill="x", pady=(6, 0))
-        sb_url_var = tk.StringVar(value=self.auth_client.supabase_url)
-        sb_key_var = tk.StringVar(value=self.auth_client.supabase_anon_key)
-        ttk.Label(sb_box, text="URL:").grid(row=0, column=0, sticky="w", pady=2)
-        ttk.Entry(sb_box, textvariable=sb_url_var, width=33).grid(row=0, column=1, sticky="ew", pady=2, padx=(6, 0))
-        ttk.Label(sb_box, text="Anon Key:").grid(row=1, column=0, sticky="w", pady=2)
-        ttk.Entry(sb_box, textvariable=sb_key_var, show="•", width=33).grid(row=1, column=1, sticky="ew", pady=2, padx=(6, 0))
-
-        def _save_sb() -> None:
-            url_v = sb_url_var.get().strip().rstrip("/")
-            key_v = sb_key_var.get().strip()
-            self.cfg.setdefault("auth", {})["supabase_url"] = url_v
-            self.cfg["auth"]["supabase_anon_key"] = key_v
-            save_config(self.cfg)
-            self.auth_client.configure(url_v, key_v)
-            self._build_menu()
-            status_var.set("Saved Supabase configuration." if is_en else "Đã lưu cấu hình Supabase.")
-
-        ttk.Button(sb_box, text="Save Server Config" if is_en else "Lưu cấu hình Server", command=_save_sb).grid(
-            row=2, column=0, columnspan=2, sticky="e", pady=(4, 0)
-        )
-
-    def _open_account_dialog(self) -> None:
-        is_en = self._lang() == "en"
-        sess = self.auth_client.session
-        if sess.is_guest:
-            self._open_auth_dialog(0)
-            return
-        win = tk.Toplevel(self.root)
-        win.title("Account & Password" if is_en else "Tài khoản & Mật khẩu")
-        _set_window_icon(win, _active_icon_path(self.cfg))
-        win.resizable(False, False)
-        frm = ttk.Frame(win, padding=14)
-        frm.pack(fill="both", expand=True)
-
-        ttk.Label(frm, text=f"Email: {sess.email}").pack(anchor="w")
-        ttk.Label(frm, text=f"Role / Quyền: {sess.effective_role}").pack(anchor="w", pady=(2, 8))
-
-        pw_var = tk.StringVar()
-        st_var = tk.StringVar()
-        ttk.Label(frm, text="New password:" if is_en else "Đổi mật khẩu mới:").pack(anchor="w")
-        ttk.Entry(frm, textvariable=pw_var, show="•", width=32).pack(fill="x", pady=(2, 6))
-        ttk.Label(frm, textvariable=st_var, foreground="#1E6B3A").pack(anchor="w")
-
-        def _change_pw() -> None:
-            def _w() -> None:
-                res = self.auth_client.change_password(pw_var.get())
-                win.after(0, lambda: st_var.set(res.message))
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        btns = ttk.Frame(frm)
-        btns.pack(fill="x", pady=(8, 0))
-        ttk.Button(btns, text="Update Password" if is_en else "Cập nhật mật khẩu", command=_change_pw).pack(side="left")
-        if sess.is_admin:
-            ttk.Button(
-                btns,
-                text="Admin Panel..." if is_en else "Mở Admin Panel...",
-                command=lambda: (win.destroy(), self._open_admin_panel()),
-            ).pack(side="left", padx=6)
-        else:
-            ttk.Button(
-                btns,
-                text="Enter Admin ID..." if is_en else "Nhập Admin ID...",
-                command=lambda: (win.destroy(), self._open_auth_dialog(1)),
-            ).pack(side="left", padx=6)
-        ttk.Button(btns, text="Sign out" if is_en else "Đăng xuất", command=lambda: (win.destroy(), self._sign_out())).pack(
-            side="right"
-        )
-
-    def _open_admin_panel(self) -> None:
-        if not self.auth_client.session.is_admin:
-            return
-        if self._admin_win is not None and self._admin_win.winfo_exists():
-            self._admin_win.lift()
-            return
-        is_en = self._lang() == "en"
-        is_super = self.auth_client.session.is_super_admin
-        win = tk.Toplevel(self.root)
-        self._admin_win = win
-        role_hdr = "Super Admin" if is_super else ("Co-Admin" if is_en else "Đồng Admin")
-        win.title(f"desk-widget Admin Panel [{role_hdr}]")
-        _set_window_icon(win, _active_icon_path(self.cfg))
-        win.geometry("680x500")
-
-        outer = ttk.Frame(win, padding=10)
-        outer.pack(fill="both", expand=True)
-
-        nb = ttk.Notebook(outer)
-        nb.pack(fill="both", expand=True)
-        adm_status = tk.StringVar(value=f"{self.auth_client.session.email} ({role_hdr})")
-        ttk.Label(outer, textvariable=adm_status, foreground="#333333").pack(anchor="w", pady=(6, 0))
-
-        # Tab 1: Accounts & RBAC
-        tab_users = ttk.Frame(nb, padding=8)
-        nb.add(tab_users, text="Accounts" if is_en else "Tài khoản")
-        cols = ("email", "role", "status", "id")
-        tree = ttk.Treeview(tab_users, columns=cols, show="headings", height=12)
-        tree.heading("email", text="Email")
-        tree.heading("role", text="Role")
-        tree.heading("status", text="Status" if is_en else "Trạng thái")
-        tree.heading("id", text="Admin ID")
-        tree.column("email", width=230)
-        tree.column("role", width=110)
-        tree.column("status", width=100)
-        tree.column("id", width=100)
-        tree.pack(fill="both", expand=True)
-
-        profile_cache: dict[str, dict] = {}
-
-        def _load_users() -> None:
-            adm_status.set("Loading accounts..." if is_en else "Đang tải danh sách tài khoản...")
-
-            def _w() -> None:
-                res = self.auth_client.list_profiles()
-
-                def _ui() -> None:
-                    if not res.ok:
-                        adm_status.set(res.message)
-                        return
-                    for item in tree.get_children():
-                        tree.delete(item)
-                    profile_cache.clear()
-                    rows = res.data if isinstance(res.data, list) else []
-                    for row in rows:
-                        uid = str(row.get("id") or "")
-                        profile_cache[uid] = row
-                        st_txt = ("Active" if is_en else "Hoạt động") if row.get("is_active") else ("Locked" if is_en else "Đã khóa")
-                        id_txt = ("Set" if is_en else "Đã cấp") if row.get("has_admin_id") else "-"
-                        tree.insert("", "end", iid=uid, values=(row.get("email"), row.get("role"), st_txt, id_txt))
-                    adm_status.set(f"Loaded {len(rows)} accounts." if is_en else f"Đã tải {len(rows)} tài khoản.")
-
-                win.after(0, _ui)
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        def _selected_row() -> dict | None:
-            sel = tree.selection()
-            if not sel:
-                messagebox.showinfo("Select" if is_en else "Chọn tài khoản", "Select an account first." if is_en else "Hãy chọn một tài khoản trong bảng.", parent=win)
-                return None
-            return profile_cache.get(sel[0])
-
-        def _toggle_lock() -> None:
-            row = _selected_row()
-            if not row:
-                return
-            uid = str(row.get("id") or "")
-            next_active = not bool(row.get("is_active", True))
-
-            def _w() -> None:
-                res = self.auth_client.set_user_active(uid, next_active)
-                win.after(0, lambda: (adm_status.set(res.message if not res.ok else "Updated."), _load_users()))
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        def _delete_account() -> None:
-            row = _selected_row()
-            if not row:
-                return
-            if not messagebox.askyesno(
-                "Confirm Delete" if is_en else "Xác nhận xóa",
-                f"Delete account {row.get('email')} permanently?",
-                parent=win,
-            ):
-                return
-            uid = str(row.get("id") or "")
-
-            def _w() -> None:
-                res = self.auth_client.delete_user(uid)
-                win.after(0, lambda: (adm_status.set(res.message if not res.ok else "Deleted."), _load_users()))
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        u_bar = ttk.Frame(tab_users)
-        u_bar.pack(fill="x", pady=(8, 0))
-        ttk.Button(u_bar, text="Refresh" if is_en else "Tải lại", command=_load_users).pack(side="left")
-        ttk.Button(u_bar, text="Lock / Unlock" if is_en else "Khóa / Mở khóa", command=_toggle_lock).pack(side="left", padx=6)
-        if is_super:
-            ttk.Button(u_bar, text="Delete Account" if is_en else "Xóa tài khoản", command=_delete_account).pack(side="left")
-
-        # Tab 2: Super Admin ONLY — Generate & Revoke 11-digit Co-Admin IDs
-        if is_super:
-            tab_coadmin = ttk.Frame(nb, padding=12)
-            nb.add(tab_coadmin, text="Co-Admin IDs (11-digit)" if is_en else "Tạo Co-Admin ID (11 số)")
-
-            ttk.Label(
-                tab_coadmin,
-                text=(
-                    "Only Super Admin can generate unique random 11-digit Admin IDs for Co-Admins.\n"
-                    "The ID never collides with your fixed Super Admin ID or other Co-Admins."
-                )
-                if is_en
-                else (
-                    "Chỉ tài khoản tối cao (Super Admin) mới tạo hoặc cấp lại được Co-Admin ID.\n"
-                    "Mỗi mã gồm đúng 11 chữ số ngẫu nhiên duy nhất, không bao giờ trùng với Super ID của bạn hay Co-Admin khác."
-                ),
-                wraplength=600,
-            ).pack(anchor="w", pady=(0, 10))
-
-            c_email = tk.StringVar()
-            generated_id_var = tk.StringVar()
-
-            row_e = ttk.Frame(tab_coadmin)
-            row_e.pack(fill="x", pady=4)
-            ttk.Label(row_e, text="Co-Admin Email:", width=18).pack(side="left")
-            ttk.Entry(row_e, textvariable=c_email, width=38).pack(side="left", padx=6)
-
-            row_g = ttk.Frame(tab_coadmin)
-            row_g.pack(fill="x", pady=8)
-            ttk.Label(row_g, text="Generated ID (11 digits):" if is_en else "ID vừa tạo (11 số):", width=18).pack(side="left")
-            id_entry = ttk.Entry(row_g, textvariable=generated_id_var, width=24, state="readonly")
-            id_entry.pack(side="left", padx=6)
-
-            def _copy_generated() -> None:
-                val = generated_id_var.get().strip()
-                if not val:
-                    return
-                win.clipboard_clear()
-                win.clipboard_append(val)
-                adm_status.set("Copied 11-digit Co-Admin ID!" if is_en else "Đã copy Co-Admin ID 11 số!")
-
-            ttk.Button(row_g, text="Copy ID", command=_copy_generated).pack(side="left", padx=4)
-
-            def _grant_coadmin() -> None:
-                target = c_email.get().strip().lower()
-                if not target:
-                    messagebox.showwarning("Missing Email", "Enter the Co-Admin email first.", parent=win)
-                    return
-
-                def _w() -> None:
-                    res = self.auth_client.grant_coadmin_id(target)
-
-                    def _ui() -> None:
-                        if not res.ok:
-                            adm_status.set(res.message)
-                            return
-                        new_id = str((res.data or {}).get("admin_id") or "")
-                        generated_id_var.set(new_id)
-                        adm_status.set(
-                            f"Assigned Co-Admin ID to {target}." if is_en else f"Đã cấp ID 11 số cho Co-Admin {target}."
-                        )
-                        _load_users()
-
-                    win.after(0, _ui)
-
-                threading.Thread(target=_w, daemon=True).start()
-
-            def _revoke_selected_coadmin() -> None:
-                row = _selected_row()
-                if not row:
-                    return
-                uid = str(row.get("id") or "")
-
-                def _w() -> None:
-                    res = self.auth_client.revoke_coadmin(uid)
-                    win.after(0, lambda: (adm_status.set(res.message if not res.ok else "Revoked Co-Admin."), _load_users()))
-
-                threading.Thread(target=_w, daemon=True).start()
-
-            c_btns = ttk.Frame(tab_coadmin)
-            c_btns.pack(fill="x", pady=(10, 0))
-            ttk.Button(
-                c_btns,
-                text="Generate / Reset 11-Digit Co-Admin ID" if is_en else "Tạo / Cấp lại ID 11 số ngẫu nhiên",
-                command=_grant_coadmin,
-            ).pack(side="left")
-            ttk.Button(
-                c_btns,
-                text="Revoke Selected Co-Admin (from Accounts tab)" if is_en else "Thu hồi Co-Admin đang chọn ở tab Tài khoản",
-                command=_revoke_selected_coadmin,
-            ).pack(side="left", padx=8)
-
-        # Tab 3: Remote Config, Announcements & Feature Flags
-        tab_remote = ttk.Frame(nb, padding=10)
-        nb.add(tab_remote, text="Remote Control" if is_en else "Điều khiển từ xa")
-        rs = self.auth_client.remote_settings
-        v_ann_title = tk.StringVar(value=rs.announcement_title)
-        v_ann_body = tk.StringVar(value=rs.announcement_body)
-        v_shared_ics = tk.StringVar(value=rs.shared_ics_url)
-        v_force_theme = tk.StringVar(value=rs.force_theme)
-        v_min_ver = tk.StringVar(value=rs.min_version)
-
-        ttk.Label(tab_remote, text="Announcement Title:" if is_en else "Tiêu đề thông báo:").grid(row=0, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_remote, textvariable=v_ann_title, width=48).grid(row=0, column=1, sticky="ew", pady=3, padx=6)
-        ttk.Label(tab_remote, text="Announcement Body:" if is_en else "Nội dung thông báo:").grid(row=1, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_remote, textvariable=v_ann_body, width=48).grid(row=1, column=1, sticky="ew", pady=3, padx=6)
-        ttk.Label(tab_remote, text="Shared Calendar .ics:" if is_en else "Link lịch .ics chung:").grid(row=2, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_remote, textvariable=v_shared_ics, width=48).grid(row=2, column=1, sticky="ew", pady=3, padx=6)
-        ttk.Label(tab_remote, text="Force User Theme:" if is_en else "Ép giao diện User:").grid(row=3, column=0, sticky="w", pady=3)
-        ttk.Combobox(tab_remote, textvariable=v_force_theme, values=["", "auto", "system", "light", "dark"], width=14, state="readonly").grid(
-            row=3, column=1, sticky="w", pady=3, padx=6
-        )
-        ttk.Label(tab_remote, text="Min App Version:" if is_en else "Phiên bản tối thiểu:").grid(row=4, column=0, sticky="w", pady=3)
-        ttk.Entry(tab_remote, textvariable=v_min_ver, width=16).grid(row=4, column=1, sticky="w", pady=3, padx=6)
-
-        flags_box = ttk.LabelFrame(tab_remote, text="User Feature Permissions" if is_en else "Quyền tính năng cho User", padding=8)
-        flags_box.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(8, 4))
-        flag_vars: dict[str, tk.BooleanVar] = {}
-        flag_labels = {
-            "allow_settings": "Allow Settings" if is_en else "Cho phép mở Cài đặt",
-            "allow_bg_logo": "Allow Background / Icon" if is_en else "Cho phép đổi Nền / Icon",
-            "allow_style": "Allow Style Switch" if is_en else "Cho phép đổi Phong cách chữ",
-            "allow_theme": "Allow Theme Switch" if is_en else "Cho phép đổi Sáng / Tối",
-            "allow_esl_export": "Allow ESL Export" if is_en else "Cho phép Xuất ảnh ESL",
-            "allow_updates": "Allow Update Checks" if is_en else "Cho phép Kiểm tra cập nhật",
-        }
-        for idx, (fk, flbl) in enumerate(flag_labels.items()):
-            var = tk.BooleanVar(value=bool(rs.feature_flags.get(fk, True)))
-            flag_vars[fk] = var
-            ttk.Checkbutton(flags_box, text=flbl, variable=var).grid(row=idx // 2, column=idx % 2, sticky="w", padx=8, pady=2)
-
-        def _save_remote() -> None:
-            new_rs = RemoteSettings(
-                announcement_title=v_ann_title.get().strip(),
-                announcement_body=v_ann_body.get().strip(),
-                shared_ics_url=v_shared_ics.get().strip(),
-                force_theme=v_force_theme.get().strip(),
-                min_version=v_min_ver.get().strip(),
-                feature_flags={k: bool(v.get()) for k, v in flag_vars.items()},
-            )
-
-            def _w() -> None:
-                res = self.auth_client.update_remote_settings(new_rs)
-                win.after(
-                    0,
-                    lambda: (
-                        adm_status.set(res.message if not res.ok else ("Saved remote settings." if is_en else "Đã lưu cấu hình từ xa lên Server.")),
-                        self._build_menu(),
-                        self.trigger_refresh(force_weather=False),
-                    ),
-                )
-
-            threading.Thread(target=_w, daemon=True).start()
-
-        ttk.Button(tab_remote, text="Save to Server" if is_en else "Lưu cấu hình lên Server", command=_save_remote).grid(
-            row=6, column=0, columnspan=2, sticky="e", pady=(6, 0)
-        )
-
-        # Tab 4: Advanced Inspector & Live Config Editor
-        tab_adv = ttk.Frame(nb, padding=8)
-        nb.add(tab_adv, text="Advanced" if is_en else "Can thiệp sâu")
-        ttk.Label(
-            tab_adv,
-            text=f"User ID: {self.auth_client.session.user_id} | DB Role: {self.auth_client.session.db_role} | App v{APP_VERSION}",
-        ).pack(anchor="w", pady=(0, 4))
-        cfg_text = tk.Text(tab_adv, width=74, height=18, font=("Consolas", 9))
-        cfg_text.pack(fill="both", expand=True)
-        cfg_text.insert("1.0", json.dumps(self.cfg, ensure_ascii=False, indent=2))
-
-        def _apply_raw_cfg() -> None:
-            try:
-                parsed = json.loads(cfg_text.get("1.0", "end"))
-                if not isinstance(parsed, dict):
-                    raise ValueError("Root JSON must be an object")
-                self.cfg = parsed
-                save_config(self.cfg)
-                self._build_menu()
-                self.trigger_refresh(force_weather=True)
-                adm_status.set("Applied live config.json." if is_en else "Đã lưu & áp dụng config.json.")
-            except Exception as exc:
-                messagebox.showerror("JSON Error", str(exc), parent=win)
-
-        adv_bar = ttk.Frame(tab_adv)
-        adv_bar.pack(fill="x", pady=(6, 0))
-        ttk.Button(adv_bar, text="Save & Apply JSON" if is_en else "Lưu & Áp dụng ngay", command=_apply_raw_cfg).pack(side="right")
-        ttk.Button(
-            adv_bar,
-            text="Force Full Refresh" if is_en else "Xóa cache & Làm mới ngay",
-            command=lambda: self.trigger_refresh(force_weather=True),
-        ).pack(side="left")
-
-        _load_users()
-
     @staticmethod
     def _cleanup_pid_file() -> None:
         try:
@@ -2690,15 +1924,13 @@ class ESLDeskWidget:
             return
         self._exiting = True
         self._close_detail_popup()
-        for win_attr in ("_settings_win", "_auth_win", "_admin_win"):
-            w = getattr(self, win_attr, None)
-            if w is not None:
-                try:
-                    if w.winfo_exists():
-                        w.destroy()
-                except Exception:
-                    pass
-                setattr(self, win_attr, None)
+        if self._settings_win is not None:
+            try:
+                if self._settings_win.winfo_exists():
+                    self._settings_win.destroy()
+            except Exception:
+                pass
+            self._settings_win = None
         self._cleanup_pid_file()
         try:
             self.root.quit()

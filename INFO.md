@@ -59,16 +59,15 @@ When **`Auto-detect location & calendar timezone via IP`** is enabled in **Setti
 - **E-Ink 3-Color ESL Export (`296×128 PNG/BMP`):** Converts the current widget canvas into a 3-color Black/White/Red bitmap sized for `2.9"` (`296×128`) electronic shelf labels (sharpest when using **Minimal Sans** style).
 - **macOS right-click:** Supports two-finger tap (`Button-2`), `Control + Click`, and standard right-click (`Button-3`).
 
-### 7. Accounts, Demo Mode, Privacy & Updates
+### 7. Storage, Updates, First-Run Warnings & License
 
-- **Offline Demo Mode vs Signed-in Sync:** Fresh launches open in Offline Demo mode so anyone can preview the widget right away. Double-clicking Settings prompts email sign-in / sign-up so personal `.ics` URLs and settings stay tied to your account (when Supabase Auth is configured).
-- **3-Tier Admin Locks:** If signed into a managed instance, `Super Admin` / `Co-Admin` may lock specific capabilities (`allow_settings`, `allow_bg_logo`, `allow_style`, `allow_theme`, `allow_esl_export`, `allow_updates`), enforce `force_theme`, or show remote announcements / minimum-version notices.
-- **Password Recovery (`Forgot Password?`):** Uses a 6–8 digit Email OTP entered directly inside the app (provided the Supabase *Reset Password* email template displays `{{ .Token }}`).
-- **Where personal data is stored:** Configs, custom backgrounds/icons, and logs live outside the binary in `%APPDATA%\desk-widget` (Windows) or `~/Library/Application Support/desk-widget` (macOS). Session tokens are encrypted with **Windows DPAPI** on Windows or restricted with **`chmod 0600`** on macOS/Linux.
+- **No Login Required:** All features (Calendars, Weather, Styles, Themes, Custom Backgrounds, ESL Export, Updates) work immediately out of the box without any account or login gate.
+- **Where personal data is stored:** Your `config.json`, custom backgrounds/icons, and `widget.pid` are stored locally on your machine outside the app binary in `%APPDATA%\desk-widget` (Windows) or `~/Library/Application Support/desk-widget` (macOS).
 - **First-run OS warnings & Updates:**
   - **Windows SmartScreen:** Click **More info → Run anyway** on unsigned `.exe`. If Desktop shortcut icons look cached after `App Icon...`, press **`F5`** on the Desktop.
   - **macOS Gatekeeper:** Move `desk-widget.app` to **Applications**, **Right-click → Open** (or **System Settings → Privacy & Security → Open Anyway**, or `xattr -dr com.apple.quarantine /Applications/desk-widget.app`). Note: macOS `.dmg` releases are built on GitHub Actions CI and verified with mocked unit tests rather than hands-on Mac hardware testing.
-  - **Auto-start & Updates:** Toggle auto-start in **Settings** (manages Windows Startup `.lnk` or macOS `LaunchAgent`). Clicking **Check for updates** checks GitHub Releases (subject to GitHub's public unauthenticated API rate limit if spammed repeatedly) and opens the matching `.exe`, `apple-silicon.dmg`, or `intel.dmg` link in your browser — it never silently overwrites files without confirmation.
+  - **Auto-start & Updates:** Toggle auto-start in **Settings** (manages Windows Startup `.lnk` or macOS `LaunchAgent`). Clicking **Check for updates** checks GitHub Releases (subject to GitHub's public unauthenticated API rate limit if clicked repeatedly) and opens the matching `.exe`, `apple-silicon.dmg`, or `intel.dmg` link in your browser — it never silently overwrites files without confirmation.
+- **License & Copyright:** Open-source under **MIT License** — **`Copyright (c) 2026 hhuuphucc`**. Anyone may use, modify, and redistribute it while keeping the copyright notice and `LICENSE` file.
 
 ---
 
@@ -129,14 +128,13 @@ Khi ô **`Tự động cập nhật vị trí & múi giờ lịch theo mạng IP
 - **Xuất ảnh E-Ink 3 màu (`296×128 PNG/BMP`):** Chuyển card hiện tại thành ảnh 3 màu Đen/Trắng/Đỏ đúng chuẩn màn hình ESL `2.9"` (`296×128`) — hiển thị sắc nét nhất khi dùng phong cách **Minimal Sans**.
 - **Chuột phải trên macOS:** Hỗ trợ chạm 2 ngón (`Button-2`), `Control + Click` và chuột phải thường (`Button-3`).
 
-### 7. Tài khoản, Chế độ Xem thử, Bảo mật & Cập nhật
+### 7. Lưu trữ, Bản quyền, Cảnh báo hệ điều hành & Cập nhật
 
-- **Chế độ Xem thử Offline vs Đăng nhập:** Mở lần đầu sẽ vào chế độ Offline Demo để dùng thử ngay; khi mở **Cài đặt** (nếu bản build có bật Supabase Auth) app sẽ nhắc đăng nhập/đăng ký bằng Email để đồng bộ lịch `.ics` và cấu hình riêng.
-- **Giới hạn tính năng từ Admin:** Với tài khoản `User` thuộc hệ thống có quản trị viên, `Super Admin` / `Co-Admin` có thể tạm khóa một số nút (`Cài đặt`, `Đổi nền/Logo`, `Phong cách`, `Giao diện`, `Xuất ảnh ESL`, `Cập nhật`), ép giao diện `force_theme`, gửi thông báo chung hoặc yêu cầu phiên bản tối thiểu (`min_version`).
-- **Quên mật khẩu (`Forgot Password?`):** Đổi mật khẩu bằng mã OTP 6–8 số gửi về Email trực tiếp ngay trong app (cần Email Template *Reset Password* trên Supabase hiển thị `{{ .Token }}`).
-- **Nơi lưu dữ liệu cá nhân & mã hóa:** Cấu hình, ảnh nền, icon và log lưu ngoài file chạy tại `%APPDATA%\desk-widget` (Windows) hoặc `~/Library/Application Support/desk-widget` (macOS). Phiên đăng nhập (`session.json`) được mã hóa bằng **Windows DPAPI** trên Windows hoặc khóa quyền **`0600`** trên macOS.
+- **Không cần đăng nhập:** Toàn bộ tính năng (thêm lịch `.ics`, thời tiết, giao diện, đổi nền/logo/icon, xuất ảnh ESL, cập nhật) mở sẵn cho mọi người tải về dùng và tùy biến ngay lập tức.
+- **Nơi lưu dữ liệu cá nhân:** Cấu hình (`config.json`), ảnh nền/icon tùy chỉnh và `widget.pid` lưu hoàn toàn trên máy bạn (tách biệt ngoài file chạy) tại `%APPDATA%\desk-widget` (Windows) hoặc `~/Library/Application Support/desk-widget` (macOS).
 - **Cảnh báo lần đầu, Tự khởi động & Kiểm tra cập nhật:**
   - **Windows SmartScreen:** Bấm **More info → Run anyway** ở lần mở `.exe` đầu tiên. Sau khi đổi icon app (`Đổi icon app...`), nếu icon ngoài Desktop chưa đổi ngay thì nhấn **`F5`** ngoài Desktop.
   - **macOS Gatekeeper:** Kéo `desk-widget.app` vào **Applications**, nhấn **Chuột phải → Open** *(hoặc **System Settings → Privacy & Security → Open Anyway**, hay chạy `xattr -dr com.apple.quarantine /Applications/desk-widget.app`)*. *(Bản `.dmg` được GitHub Actions tự build và kiểm tra qua unit test giả lập, chưa test GUI trực tiếp trên máy Mac thật.)*
   - **Tự khởi động:** Bật/tắt trong **Cài đặt** (quản lý shortcut Startup `.lnk` trên Windows hoặc `LaunchAgent` trên macOS).
   - **Kiểm tra cập nhật:** Quét GitHub Releases (có thể chạm giới hạn request/giờ của GitHub API công khai nếu bấm liên tục nhiều chục lần) rồi mở đúng link tải `.exe`, `apple-silicon.dmg` hoặc `intel.dmg` trên trình duyệt — không tự ý tải/ghi đè âm thầm.
+- **Bản quyền (`MIT License`):** Giữ dòng **`Copyright (c) 2026 hhuuphucc`** và file `LICENSE` khi sửa đổi hoặc phân phối lại.

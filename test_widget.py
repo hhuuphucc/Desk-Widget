@@ -385,122 +385,19 @@ class TestESLWidget(unittest.TestCase):
         self.assertTrue(os.path.exists(preview_path))
         self.assertTrue(os.path.exists(esl_path))
 
-    def test_auth_client_and_rbac(self) -> None:
-        import tempfile
-        from unittest.mock import MagicMock, patch
-        import auth_client
+    def test_open_access_and_copyright(self) -> None:
+        from calendar_client import CalendarClient
+        import updater
         import widget
 
-        now = datetime(2026, 11, 24, 9, 0)
-        demo_cal = widget.build_offline_demo_calendar(now, lang="vi", view_year=2026, view_month=11)
-        self.assertGreaterEqual(len(demo_cal.events_today), 2)
+        self.assertEqual(updater.APP_COPYRIGHT, "Copyright (c) 2026 hhuuphucc")
+        self.assertEqual(updater.APP_LICENSE, "MIT License")
+        self.assertEqual(widget.__copyright__, updater.APP_COPYRIGHT)
+        self.assertEqual(widget.__license__, updater.APP_LICENSE)
+        self.assertNotIn("auth", widget.DEFAULT_CONFIG)
 
-        with tempfile.TemporaryDirectory() as td:
-            sess_file = os.path.join(td, "session.json")
-            client = auth_client.AuthClient(sess_file, supabase_url="https://demo.supabase.co", supabase_anon_key="anon-key")
-            self.assertTrue(client.is_configured())
-            self.assertEqual(client.session.effective_role, "guest")
-
-            # Verify admin_verified invariant: db_role alone never unlocks admin UI
-            client.session = auth_client.AuthSession(
-                user_id="u-1",
-                email="super@example.com",
-                db_role="super_admin",
-                admin_verified=False,
-                is_active=True,
-                access_token="tok-1",
-            )
-            self.assertEqual(client.session.effective_role, "user")
-            self.assertFalse(client.session.is_admin)
-            self.assertFalse(client.session.is_super_admin)
-
-            client.session.admin_verified = True
-            self.assertEqual(client.session.effective_role, "super_admin")
-            self.assertTrue(client.session.is_super_admin)
-
-            # Save + reload via DPAPI / 0600 file roundtrip
-            client._save_session()
-            reloaded = auth_client.AuthClient(sess_file, supabase_url="https://demo.supabase.co", supabase_anon_key="anon-key")
-            self.assertEqual(reloaded.session.email, "super@example.com")
-            self.assertTrue(reloaded.session.is_super_admin)
-
-            # Wrong Admin ID clears session & denies admin sign-in
-            tok_resp = MagicMock(status_code=200, text="{}")
-            tok_resp.json.return_value = {
-                "access_token": "tok-a",
-                "refresh_token": "ref-a",
-                "user": {"id": "u-2"},
-            }
-            state_resp = MagicMock(status_code=200, text="{}")
-            state_resp.json.return_value = {
-                "ok": True,
-                "id": "u-2",
-                "email": "coadmin@example.com",
-                "db_role": "admin",
-                "is_active": True,
-                "remote_settings": {},
-            }
-            bad_id_resp = MagicMock(status_code=200, text="{}")
-            bad_id_resp.json.return_value = {"ok": False, "error": "invalid_admin_id", "attempts_left": 4}
-            logout_resp = MagicMock(status_code=204, text="")
-
-            with patch("auth_client.requests.post", side_effect=[tok_resp, state_resp, bad_id_resp, logout_resp]):
-                bad_login = client.sign_in_admin("coadmin@example.com", "secret123", "00000000000")
-            self.assertFalse(bad_login.ok)
-            self.assertTrue(client.session.is_guest)
-
-            # Co-Admin verified with 11-digit ID cannot call super_admin_grant_coadmin
-            good_id_resp = MagicMock(status_code=200, text="{}")
-            good_id_resp.json.return_value = {"ok": True, "role": "admin", "email": "coadmin@example.com"}
-            with patch("auth_client.requests.post", side_effect=[tok_resp, state_resp, good_id_resp, state_resp]):
-                ok_coadmin = client.sign_in_admin("coadmin@example.com", "secret123", "48291058374")
-            self.assertTrue(ok_coadmin.ok)
-            self.assertEqual(client.session.effective_role, "admin")
-            self.assertFalse(client.session.is_super_admin)
-            denied = client.grant_coadmin_id("other@example.com")
-            self.assertFalse(denied.ok)
-
-            # Super Admin can generate 11-digit Co-Admin ID
-            client.session = auth_client.AuthSession(
-                user_id="u-1",
-                email="super@example.com",
-                db_role="super_admin",
-                admin_verified=True,
-                is_active=True,
-                access_token="tok-super",
-            )
-            grant_resp = MagicMock(status_code=200, text="{}")
-            grant_resp.json.return_value = {
-                "ok": True,
-                "id": "u-3",
-                "email": "newadmin@example.com",
-                "role": "admin",
-                "admin_id": "73910482615",
-            }
-            with patch("auth_client.requests.post", return_value=grant_resp):
-                granted = client.grant_coadmin_id("newadmin@example.com")
-            self.assertTrue(granted.ok)
-            self.assertEqual(len(granted.data["admin_id"]), 11)
-            self.assertTrue(granted.data["admin_id"].isdigit())
-
-            # Password recovery OTP flow
-            rec_resp = MagicMock(status_code=200, text="{}")
-            ver_resp = MagicMock(status_code=200, text="{}")
-            ver_resp.json.return_value = {"access_token": "rec-tok"}
-            upd_resp = MagicMock(status_code=200, text="{}")
-            with patch("auth_client.requests.post", side_effect=[rec_resp, ver_resp]), patch(
-                "auth_client.requests.put", return_value=upd_resp
-            ):
-                self.assertTrue(client.send_password_recovery("user@example.com").ok)
-                self.assertTrue(client.verify_recovery_and_set_password("user@example.com", "123456", "newpass123").ok)
-
-            # Callback URL (#access_token=...) recovery flow (default Supabase link template)
-            with patch("auth_client.requests.put", return_value=upd_resp):
-                self.assertTrue(
-                    client.verify_recovery_and_set_password(
-                        "", "http://localhost:3000/#access_token=jwt-rec-123&type=recovery", "newpass123"
-                    ).ok
-                )
+        empty_cal = CalendarClient().fetch([], tz_name="Asia/Ho_Chi_Minh")
+        self.assertFalse(empty_cal.has_urls)
 
 
 if __name__ == "__main__":
