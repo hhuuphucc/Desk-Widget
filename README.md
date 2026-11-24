@@ -106,7 +106,7 @@ Double-click any empty area on the widget (or **Right-click → `Settings (Calen
 3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to unlock `City`, `Find coords`, `Lat/Lon`, and `Timezone` manually. *(See [`INFO.md`](INFO.md#1-travelling-anywhere-in-the-world-auto-detect-via-ip) for IP/VPN caveats and manual coordinate/timezone tips.)*
 4. **In Settings vs Right-Click Menu:**
    - **Inside Settings:** Change **Visual style** (`Botanical` / `Classic Serif` / `Minimal Sans`), **E-Ink theme** (`auto` / `system` / `light` / `dark`), **Title alignment**, **Temperature unit** (`°C` / `°F`), **Language**, **Auto-start**, **Always on top** / **Send behind**, **Background & Header Logo**, and **App Icon**. *(Fresh clones start with a clean neutral card for personal customization.)*
-   - **Streamlined Right-Click Menu:** `Refresh now`, `Settings...`, `Export ESL (296×128 PNG)...`, `Check for updates (v1.1.1)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
+   - **Streamlined Right-Click Menu:** `Refresh now`, `Settings...`, `Export ESL (296×128 PNG)...`, `Check for updates (v1.1.2)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
 
 ### Quick Interactions
 
@@ -272,7 +272,7 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - Mặc định bật **Tự động cập nhật vị trí & múi giờ lịch theo mạng (IP)**. Nếu muốn cố định thành phố khác, **bỏ tích** để mở khóa 5 ô (`Thành phố`, `Tìm tọa độ`, `Lat/Lon`, `Múi giờ`) rồi gõ tên thành phố → **Tìm tọa độ** (và chỉnh `Múi giờ` nếu muốn xem giờ nơi đó). *(Xem thêm các ngoại lệ mạng 4G/VPN & mẹo tìm tọa độ chuẩn tại [`INFO.md`](INFO.md#1-khi-đi-sang-tỉnh--thành--bang--nước-khác-bật-tự-động-theo-ip).)*
 4. **Cài đặt giao diện & Menu chuột phải:**
    - **Trong Cài đặt:** Chỉnh `Phong cách giao diện` (**Botanical / Classic Serif / Minimal Sans**), `Giao diện E-Ink` (`auto / system / light / dark`), `Vị trí tên tiêu đề`, `Độ C / Độ F`, `Ngôn ngữ`, `Tự khởi động`, `Luôn nổi trên cùng` / `Ẩn ra sau ngay`, `Đổi nền / Logo` (icon tròn cạnh tên đồng bộ theo nền widget), và `Đổi icon app...`.
-   - **Menu chuột phải gọn nhẹ:** `Làm mới ngay`, `Cài đặt...`, `Xuất ảnh ESL (296×128 PNG)...`, `Kiểm tra cập nhật (v1.1.1)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
+   - **Menu chuột phải gọn nhẹ:** `Làm mới ngay`, `Cài đặt...`, `Xuất ảnh ESL (296×128 PNG)...`, `Kiểm tra cập nhật (v1.1.2)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
 
 ### Thao tác nhanh trên Widget
 

@@ -8,7 +8,7 @@ import re
 import sys
 import requests
 
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.2"
 APP_AUTHOR = "hhuuphucc"
 APP_COPYRIGHT = "Copyright (c) 2026 hhuuphucc"
 APP_LICENSE = "MIT License"
