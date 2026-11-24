@@ -82,8 +82,8 @@ class TestESLWidget(unittest.TestCase):
         self.assertIn(date(2026, 11, 30), summary.events_by_date)
 
     def test_embed_url_normalization(self) -> None:
-        embed = "https://calendar.google.com/calendar/embed?src=d6me8po8ned0nb06db1tf8v1uv909bt8%40import.calendar.google.com&ctz=Asia%2FHo_Chi_Minh"
-        expected = "https://calendar.google.com/calendar/ical/d6me8po8ned0nb06db1tf8v1uv909bt8%40import.calendar.google.com/public/basic.ics"
+        embed = "https://calendar.google.com/calendar/embed?src=sample123456%40import.calendar.google.com&ctz=Asia%2FHo_Chi_Minh"
+        expected = "https://calendar.google.com/calendar/ical/sample123456%40import.calendar.google.com/public/basic.ics"
         self.assertEqual(normalize_calendar_url(embed), expected)
         self.assertEqual(normalize_calendar_url("webcal://example.com/a.ics"), "https://example.com/a.ics")
 
