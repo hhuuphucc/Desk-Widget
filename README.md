@@ -112,7 +112,7 @@ Double-click any empty area on the widget (or **Right-click → `Settings...`**)
 3. **Weather & Timezone:** Auto-location & IP timezone sync is enabled by default; uncheck it to unlock `City`, `Find coordinates` (press `Enter` or click to automatically resolve city coordinates & timezone), `Lat/Lon`, and the scrollable **34-zone world timezone** picker. *(See [`INFO.md`](INFO.md#1-travelling-anywhere-in-the-world-auto-detect-via-ip) for IP/VPN caveats and manual coordinate/timezone tips.)*
 4. **In Settings vs Right-Click Menu:**
    - **Inside Settings (`5` Tabs):** Change **Visual style** (`macOS` / `Pixel` / `Xiaomi HyperOS` / `Ocean Calm` / `Paper Serif` / `Sans`), **Theme** (`auto` / `system` / `light` / `dark`), **Scale**, **Temperature unit** (`°C` / `°F`), **Language**, **Title & Alignment**, **Header Logo & Background** (with live framing, Negative tone & Strength `%`), **Calendars & Custom Reminders**, **Auto-start**, **Always on top** / **Send behind**, **App Icon**, and **About** links. *(Fresh clones start with a clean neutral card for personal customization.)*
-   - **Streamlined Right-Click Menu:** `Refresh now`, `Settings...`, `Check for updates (v1.1.2)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
+   - **Streamlined Right-Click Menu:** `Refresh now`, `Settings...`, `Check for updates (v1.2.0)...` (automatically picks Windows `.exe`, macOS Apple Silicon `.dmg`, or macOS Intel `.dmg`), and `Quit`.
 
 ### Quick Interactions
 
@@ -287,7 +287,7 @@ Nhấn đúp vào khoảng trống trên widget (hoặc **chuột phải → `C�
    - Mặc định bật **Tự động lấy vị trí & múi giờ theo IP**. Nếu muốn cố định thành phố khác, **bỏ tích** để mở khóa `Thành phố`, `Tìm tọa độ` (nhấn `Enter` hoặc bấm nút sẽ tự điền cả `Vĩ độ`, `Kinh độ` và tự đổi `Múi giờ` theo thành phố đó), và danh sách cuộn **34 múi giờ thế giới**. *(Xem thêm các ngoại lệ mạng 4G/VPN & mẹo tìm tọa độ chuẩn tại [`INFO.md`](INFO.md#1-khi-đi-sang-tỉnh--thành--bang--nước-khác-bật-tự-động-theo-ip).)*
 4. **Cài đặt giao diện & Menu chuột phải:**
    - **Trong Cài đặt (5 tab):** Đổi `Phong cách` (**macOS / Pixel / Xiaomi HyperOS / Ocean Calm / Paper Serif / Sans**), `Chế độ sáng/tối` (`auto / system / light / dark`), `Cỡ widget`, `Độ C / Độ F`, `Ngôn ngữ`, `Tiêu đề & Căn lề`, `Logo & Nền Widget` (căn khung, Âm bản, Độ rõ nền), `Lịch & Nhắc nhở`, `Tự khởi động`, `Luôn nổi trên cùng` / `Ẩn ra sau ngay`, `Đổi icon app...`, và tab `Giới thiệu`. *(Bản clone mới giữ giao diện trung tính gọn gàng để bạn tự cá nhân hóa.)*
-   - **Menu chuột phải gọn nhẹ:** `Làm mới ngay`, `Cài đặt...`, `Kiểm tra cập nhật (v1.1.2)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
+   - **Menu chuột phải gọn nhẹ:** `Làm mới ngay`, `Cài đặt...`, `Kiểm tra cập nhật (v1.2.0)...` (tự chọn đúng bản `Windows .exe`, `macOS Apple Silicon .dmg` hoặc `macOS Intel .dmg`) và `Thoát`.
 
 ### Thao tác nhanh trên Widget
 

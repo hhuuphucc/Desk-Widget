@@ -8,7 +8,7 @@ import re
 import sys
 import requests
 
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.2.0"
 APP_AUTHOR = "hhuuphucc"
 APP_EMAIL = "hhuuphucc@gmail.com"
 APP_COPYRIGHT = "Copyright (c) 2026 hhuuphucc"
